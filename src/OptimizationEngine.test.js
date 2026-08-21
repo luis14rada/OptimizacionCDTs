@@ -1,11 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import {
   SMMLV_2026,
+  TOPE_IBC_SMMLV,
   calcularTasaPeriodica,
   calcularSeguridadSocial,
   calcularInversionMaximaOptima,
   validarCDT,
-  recalcularPortafolio
+  recalcularPortafolio,
+  sumarMeses
 } from './OptimizationEngine';
 
 const cdtBase = (overrides = {}) => ({
@@ -195,5 +197,114 @@ describe('recalcularPortafolio', () => {
     const mesesOrdenados = [...meses].sort();
     expect(meses).toEqual(mesesOrdenados);
     expect(meses).toHaveLength(3);
+  });
+});
+
+/* ==========================================================================
+   Regresiones — los tres errores de cálculo detectados en la auditoría.
+   Cada prueba se escribió ANTES del arreglo y fallaba con el código anterior.
+   ========================================================================== */
+
+describe('Regresión · el IBC respeta el techo legal de 25 SMMLV', () => {
+  it('no deja que el IBC supere 25 SMMLV por muy alto que sea el ingreso', () => {
+    const resultado = calcularSeguridadSocial(300000000);
+    const techo = SMMLV_2026 * TOPE_IBC_SMMLV;
+
+    expect(resultado.ibc).toBeLessThanOrEqual(techo);
+    expect(resultado.ibc).toBeCloseTo(techo, 2);
+  });
+
+  it('cobra sobre el techo, no sobre el ingreso completo', () => {
+    const techo = SMMLV_2026 * TOPE_IBC_SMMLV;
+    const resultado = calcularSeguridadSocial(300000000);
+
+    expect(resultado.salud).toBeCloseTo(techo * 0.125, 2);
+    expect(resultado.pension).toBeCloseTo(techo * 0.16, 2);
+    // Antes del arreglo cobraba $24.795.000; lo correcto es ~$12.475.198.
+    expect(resultado.total).toBeLessThan(13000000);
+  });
+
+  it('sigue respetando el piso de 1 SMMLV en ingresos bajos', () => {
+    const resultado = calcularSeguridadSocial(SMMLV_2026);
+    expect(resultado.ibc).toBeCloseTo(SMMLV_2026, 2);
+  });
+
+  it('en el rango intermedio calcula el IBC real, sin piso ni techo', () => {
+    // 20.000.000 * 0,725 * 0,40 = 5.800.000 → entre el piso y el techo
+    const resultado = calcularSeguridadSocial(20000000);
+    expect(resultado.ibc).toBeCloseTo(5800000, 2);
+  });
+});
+
+describe('Regresión · no se pierden los periodos parciales', () => {
+  it('un CDT de 10 meses con pago trimestral paga 4 veces, no 3', () => {
+    const resultado = recalcularPortafolio([cdtBase({
+      valor: 100000000, tasaEA: 12, frecuenciaPago: 'trimestral',
+      plazoMeses: 10, fechaInicio: '2026-01-15'
+    })]);
+
+    // Meses 3, 6, 9 completos + el mes 10 residual
+    expect(resultado.totales.flujoMensual).toHaveLength(4);
+  });
+
+  it('el interés total corresponde al plazo completo contratado', () => {
+    const resultado = recalcularPortafolio([cdtBase({
+      valor: 100000000, tasaEA: 12, frecuenciaPago: 'trimestral',
+      plazoMeses: 10, fechaInicio: '2026-01-15'
+    })]);
+
+    // En un CDT que PAGA intereses periódicamente, el interés no se capitaliza:
+    // cada pago se calcula sobre el capital original. El total es la suma de los
+    // tres trimestres completos más el mes residual.
+    const tasaMensual = calcularTasaPeriodica(0.12, 12);
+    const interesTrimestre = 100000000 * (Math.pow(1 + tasaMensual, 3) - 1);
+    const interesResidual = 100000000 * (Math.pow(1 + tasaMensual, 1) - 1);
+    const esperado = interesTrimestre * 3 + interesResidual;
+
+    // Antes del arreglo faltaba el mes residual: $948.880.
+    expect(resultado.totales.interesBrutoTotal).toBeCloseTo(esperado, 0);
+  });
+
+  it('cuando el plazo sí es múltiplo de la frecuencia, no agrega pagos de más', () => {
+    const resultado = recalcularPortafolio([cdtBase({
+      valor: 100000000, tasaEA: 12, frecuenciaPago: 'trimestral',
+      plazoMeses: 12, fechaInicio: '2026-01-15'
+    })]);
+    expect(resultado.totales.flujoMensual).toHaveLength(4);
+  });
+});
+
+describe('Regresión · las fechas no se desbordan a fin de mes', () => {
+  it('31 de enero + 1 mes es 28 de febrero, no 3 de marzo', () => {
+    const resultado = sumarMeses(new Date('2026-01-31T12:00:00'), 1);
+    expect(resultado.getMonth()).toBe(1); // febrero
+    expect(resultado.getDate()).toBe(28);
+  });
+
+  it('ajusta al 29 de febrero en año bisiesto', () => {
+    const resultado = sumarMeses(new Date('2028-01-31T12:00:00'), 1);
+    expect(resultado.getMonth()).toBe(1);
+    expect(resultado.getDate()).toBe(29);
+  });
+
+  it('31 de marzo + 1 mes es 30 de abril', () => {
+    const resultado = sumarMeses(new Date('2026-03-31T12:00:00'), 1);
+    expect(resultado.getMonth()).toBe(3); // abril
+    expect(resultado.getDate()).toBe(30);
+  });
+
+  it('no altera las fechas que sí existen en el mes destino', () => {
+    const resultado = sumarMeses(new Date('2026-01-15T12:00:00'), 3);
+    expect(resultado.getMonth()).toBe(3); // abril
+    expect(resultado.getDate()).toBe(15);
+  });
+
+  it('un CDT abierto el 31 de enero no corre su vencimiento al mes siguiente', () => {
+    const resultado = recalcularPortafolio([cdtBase({
+      valor: 10000000, tasaEA: 10, frecuenciaPago: 'mensual',
+      plazoMeses: 1, fechaInicio: '2026-01-31'
+    })]);
+    // El pago debe caer en febrero de 2026, no en marzo.
+    expect(resultado.totales.flujoMensual[0].mesKey).toBe('2026-02');
   });
 });

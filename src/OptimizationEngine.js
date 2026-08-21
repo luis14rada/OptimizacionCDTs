@@ -1,31 +1,88 @@
-export const SMMLV_2026 = 1750905;
-export const COSTOS_PRESUNTOS = 0.275; // 27.50%
-export const RETENCION_FUENTE = 0.04; // 4%
-export const TARIFA_SALUD = 0.125; // 12.5%
-export const TARIFA_PENSION = 0.16; // 16%
+import { PARAMETROS_POR_DEFECTO, SITUACIONES_LABORALES } from './parametros';
+
+/*
+ * Estas constantes son los valores por defecto de 2026. El motor ya no las usa
+ * directamente: cada función recibe un juego de parámetros configurable por el
+ * usuario. Se mantienen exportadas porque la UI las muestra como referencia.
+ */
+export const SMMLV_2026 = PARAMETROS_POR_DEFECTO.smmlv;
+export const COSTOS_PRESUNTOS = PARAMETROS_POR_DEFECTO.costosPresuntos;
+export const RETENCION_FUENTE = PARAMETROS_POR_DEFECTO.retencion;
+export const TARIFA_SALUD = PARAMETROS_POR_DEFECTO.tarifaSalud;
+export const TARIFA_PENSION = PARAMETROS_POR_DEFECTO.tarifaPension;
+
+/**
+ * La ley acota el Ingreso Base de Cotización entre un piso de 1 SMMLV
+ * y un techo de 25 SMMLV. Sin el techo, los portafolios grandes calculan
+ * aportes que nadie tendría que pagar.
+ */
+export const TOPE_IBC_SMMLV = PARAMETROS_POR_DEFECTO.topeIbcSmmlv;
+
+/**
+ * Suma meses a una fecha sin desbordarse cuando el día no existe en el mes
+ * destino. `setMonth` nativo convierte el 31 de enero + 1 mes en el 3 de marzo;
+ * aquí se ajusta al último día del mes (28 de febrero).
+ */
+export const sumarMeses = (fecha, meses) => {
+  const resultado = new Date(fecha);
+  const diaOriginal = resultado.getDate();
+
+  // Nos paramos en el día 1 para que el cambio de mes nunca desborde,
+  // y luego fijamos el día acotado al último día real del mes destino.
+  resultado.setDate(1);
+  resultado.setMonth(resultado.getMonth() + meses);
+
+  const ultimoDiaDelMes = new Date(resultado.getFullYear(), resultado.getMonth() + 1, 0).getDate();
+  resultado.setDate(Math.min(diaOriginal, ultimoDiaDelMes));
+
+  return resultado;
+};
 
 export const calcularTasaPeriodica = (tasaEA, periodosAlAno) => {
   return Math.pow(1 + tasaEA, 1 / periodosAlAno) - 1;
 };
 
-export const calcularSeguridadSocial = (ingresoBrutoMensual) => {
-  if (ingresoBrutoMensual < SMMLV_2026) {
-    return { ibc: 0, salud: 0, pension: 0, total: 0, excedeTope: false };
+export const calcularSeguridadSocial = (ingresoBrutoMensual, parametros = PARAMETROS_POR_DEFECTO) => {
+  const p = { ...PARAMETROS_POR_DEFECTO, ...parametros };
+  const situacion = SITUACIONES_LABORALES[p.situacionLaboral] || SITUACIONES_LABORALES.rentista;
+
+  const sinAporte = { ibc: 0, salud: 0, pension: 0, total: 0, excedeTope: false };
+
+  // Quien no cotiza por ningún otro ingreso solo queda obligado cuando el
+  // ingreso del mes alcanza 1 SMMLV.
+  if (situacion.aplicaPiso && ingresoBrutoMensual < p.smmlv) {
+    return sinAporte;
   }
-  let ibcCalculado = (ingresoBrutoMensual - (ingresoBrutoMensual * COSTOS_PRESUNTOS)) * 0.40;
-  const ibcFinal = Math.max(ibcCalculado, SMMLV_2026);
-  const salud = ibcFinal * TARIFA_SALUD;
-  const pension = ibcFinal * TARIFA_PENSION;
-  const total = salud + pension;
-  return { ibc: ibcFinal, salud, pension, total, excedeTope: true };
+  if (ingresoBrutoMensual <= 0) return sinAporte;
+
+  const ibcDelIngreso = (ingresoBrutoMensual - (ingresoBrutoMensual * p.costosPresuntos)) * 0.40;
+  const techo = p.smmlv * p.topeIbcSmmlv;
+
+  let ibcFinal;
+  if (situacion.aplicaPiso) {
+    // El IBC vive entre el piso de 1 SMMLV y el techo de 25 SMMLV.
+    ibcFinal = Math.min(Math.max(ibcDelIngreso, p.smmlv), techo);
+  } else {
+    // Ya cotiza por otro ingreso: no se exige el piso otra vez, pero el techo
+    // aplica sobre la base combinada. Solo se aporta por la porción adicional.
+    const ibcPrevio = Math.max(0, p.ibcYaCotizado || 0);
+    const combinadoAcotado = Math.min(ibcPrevio + ibcDelIngreso, techo);
+    ibcFinal = Math.max(0, combinadoAcotado - ibcPrevio);
+  }
+
+  const salud = situacion.aportaSalud ? ibcFinal * p.tarifaSalud : 0;
+  const pension = situacion.aportaPension ? ibcFinal * p.tarifaPension : 0;
+
+  return { ibc: ibcFinal, salud, pension, total: salud + pension, excedeTope: ibcFinal > 0 };
 };
 
-export const calcularInversionMaximaOptima = (tasaEA, frecuenciaPago, plazoMeses = 12) => {
+export const calcularInversionMaximaOptima = (tasaEA, frecuenciaPago, plazoMeses = 12, parametros = PARAMETROS_POR_DEFECTO) => {
+  const p = { ...PARAMETROS_POR_DEFECTO, ...parametros };
   let tasaPeriodoPago;
 
   if (frecuenciaPago === 'al_vencimiento') {
-    // Si es al vencimiento, recibe todo el interés acumulado en un solo mes.
-    // La tasa del periodo corresponde a los meses totales.
+    // Al vencimiento se recibe todo el interés acumulado en un solo mes,
+    // así que la tasa del periodo corresponde a los meses totales.
     tasaPeriodoPago = Math.pow(1 + tasaEA, plazoMeses / 12) - 1;
   } else {
     let periodosAlAno;
@@ -39,8 +96,7 @@ export const calcularInversionMaximaOptima = (tasaEA, frecuenciaPago, plazoMeses
     tasaPeriodoPago = calcularTasaPeriodica(tasaEA, periodosAlAno);
   }
 
-  const maxInversion = Math.floor(SMMLV_2026 / tasaPeriodoPago) - 1;
-  return maxInversion;
+  return Math.floor(p.smmlv / tasaPeriodoPago) - 1;
 };
 
 /**
@@ -102,58 +158,83 @@ export const validarCDT = (form) => {
 };
 
 /**
+ * Cuántos meses cubre cada pago según la frecuencia pactada.
+ */
+const mesesPorPeriodoDe = (frecuenciaPago, plazoMeses) => {
+  switch (frecuenciaPago) {
+    case 'trimestral': return 3;
+    case 'semestral': return 6;
+    case 'anual': return 12;
+    case 'al_vencimiento': return plazoMeses;
+    default: return 1; // mensual
+  }
+};
+
+/**
+ * Calendario de pagos del CDT.
+ *
+ * Cuando el plazo no es múltiplo exacto de la frecuencia, el remanente NO se
+ * pierde: se paga al vencimiento como un periodo más corto. Un CDT a 10 meses
+ * con pago trimestral paga en los meses 3, 6, 9 y un residuo de 1 mes en el 10.
+ */
+export const construirCalendarioPagos = (plazoMeses, mesesPorPeriodo) => {
+  const pagos = [];
+  let mesAcumulado = 0;
+
+  while (mesAcumulado < plazoMeses) {
+    const mesesDelPago = Math.min(mesesPorPeriodo, plazoMeses - mesAcumulado);
+    mesAcumulado += mesesDelPago;
+    pagos.push({ mes: mesAcumulado, mesesDelPago });
+  }
+
+  return pagos;
+};
+
+/**
  * Recalcula todo el portafolio consolidando ingresos por mes calendario.
  * Esto es vital porque la UGPP suma TODOS los ingresos de rentas de capital en el mes.
  */
-export const recalcularPortafolio = (cdts) => {
+export const recalcularPortafolio = (cdts, parametros = PARAMETROS_POR_DEFECTO) => {
+  const p = { ...PARAMETROS_POR_DEFECTO, ...parametros };
+
+  // Cuando el componente inflacionario está activo, una parte del rendimiento
+  // es ingreso no constitutivo de renta y no entra en la base de retención.
+  const porcionGravada = p.componenteInflacionarioActivo
+    ? Math.max(0, 1 - (p.componenteInflacionario || 0))
+    : 1;
+
   const flujosPorMes = {};
 
   const cdtsProcesados = cdts.map(cdt => {
-    let mesesPorPeriodo = 1;
-
-    if (cdt.frecuenciaPago === 'trimestral') {
-      mesesPorPeriodo = 3;
-    } else if (cdt.frecuenciaPago === 'semestral') {
-      mesesPorPeriodo = 6;
-    } else if (cdt.frecuenciaPago === 'anual') {
-      mesesPorPeriodo = 12;
-    } else if (cdt.frecuenciaPago === 'al_vencimiento') {
-      mesesPorPeriodo = cdt.plazoMeses;
-    }
-
-    const tasaPeriodica = calcularTasaPeriodica(cdt.tasaEA / 100, 12);
-    const tasaDelPago = Math.pow(1 + tasaPeriodica, mesesPorPeriodo) - 1;
+    const mesesPorPeriodo = mesesPorPeriodoDe(cdt.frecuenciaPago, cdt.plazoMeses);
+    const tasaMensual = calcularTasaPeriodica(cdt.tasaEA / 100, 12);
     const inversion = cdt.valor;
     const fechaInicio = new Date(cdt.fechaInicio + 'T12:00:00');
 
     const flujoCrudo = [];
 
-    for (let mes = 1; mes <= cdt.plazoMeses; mes++) {
-      const esMesDePago = (mes % mesesPorPeriodo === 0) || (cdt.frecuenciaPago === 'al_vencimiento' && mes === cdt.plazoMeses);
+    for (const pago of construirCalendarioPagos(cdt.plazoMeses, mesesPorPeriodo)) {
+      const fechaPago = sumarMeses(fechaInicio, pago.mes);
+      const mesKey = `${fechaPago.getFullYear()}-${String(fechaPago.getMonth() + 1).padStart(2, '0')}`;
 
-      if (esMesDePago) {
-        const fechaPago = new Date(fechaInicio);
-        fechaPago.setMonth(fechaPago.getMonth() + mes);
-        const mesKey = `${fechaPago.getFullYear()}-${String(fechaPago.getMonth() + 1).padStart(2, '0')}`;
+      // El interés de cada pago se liquida sobre el capital original:
+      // al pagarse periódicamente, no se capitaliza.
+      const tasaDelPago = Math.pow(1 + tasaMensual, pago.mesesDelPago) - 1;
+      const interesBruto = inversion * tasaDelPago;
+      const baseGravada = interesBruto * porcionGravada;
+      const retencion = baseGravada * p.retencion;
 
-        const interesBruto = inversion * tasaDelPago;
-        const retencion = interesBruto * RETENCION_FUENTE;
+      flujoCrudo.push({ mesKey, interesBruto, baseGravada, retencion });
 
-        flujoCrudo.push({ mesKey, interesBruto, retencion });
-
-        if (!flujosPorMes[mesKey]) flujosPorMes[mesKey] = [];
-        flujosPorMes[mesKey].push({
-          cdtId: cdt.id,
-          interesBruto,
-          retencion
-        });
-      }
+      if (!flujosPorMes[mesKey]) flujosPorMes[mesKey] = [];
+      flujosPorMes[mesKey].push({ cdtId: cdt.id, interesBruto, baseGravada, retencion });
     }
 
     return {
       ...cdt,
       flujoCrudo,
       totalInteresBruto: 0,
+      totalBaseNoGravada: 0,
       totalRetencion: 0,
       totalSalud: 0,
       totalPension: 0,
@@ -167,20 +248,18 @@ export const recalcularPortafolio = (cdts) => {
   for (const mesKey in flujosPorMes) {
     const pagosEnMes = flujosPorMes[mesKey];
     const ingresoBrutoTotalMes = pagosEnMes.reduce((sum, pago) => sum + pago.interesBruto, 0);
-    const segSocialMes = calcularSeguridadSocial(ingresoBrutoTotalMes);
+    const segSocialMes = calcularSeguridadSocial(ingresoBrutoTotalMes, p);
 
     pagosEnMes.forEach(pago => {
       const proporcion = pago.interesBruto / ingresoBrutoTotalMes;
-      const ssSaludProrrateada = segSocialMes.salud * proporcion;
-      const ssPensionProrrateada = segSocialMes.pension * proporcion;
-      const ssTotalProrrateada = segSocialMes.total * proporcion;
 
       const cdtTarget = cdtsProcesados.find(c => c.id === pago.cdtId);
       cdtTarget.totalInteresBruto += pago.interesBruto;
+      cdtTarget.totalBaseNoGravada += pago.interesBruto - pago.baseGravada;
       cdtTarget.totalRetencion += pago.retencion;
-      cdtTarget.totalSalud += ssSaludProrrateada;
-      cdtTarget.totalPension += ssPensionProrrateada;
-      cdtTarget.totalSegSocial += ssTotalProrrateada;
+      cdtTarget.totalSalud += segSocialMes.salud * proporcion;
+      cdtTarget.totalPension += segSocialMes.pension * proporcion;
+      cdtTarget.totalSegSocial += segSocialMes.total * proporcion;
     });
 
     flujoMensual.push({
@@ -193,15 +272,17 @@ export const recalcularPortafolio = (cdts) => {
 
   flujoMensual.sort((a, b) => a.mesKey.localeCompare(b.mesKey));
 
-  let totales = {
+  const totales = {
     inversionTotal: 0,
     interesBrutoTotal: 0,
+    baseNoGravadaTotal: 0,
     retencionTotal: 0,
     saludTotal: 0,
     pensionTotal: 0,
     segSocialTotal: 0,
     interesNetoTotal: 0,
-    flujoMensual
+    flujoMensual,
+    parametros: p
   };
 
   const finalCdts = cdtsProcesados.map(cdt => {
@@ -210,6 +291,7 @@ export const recalcularPortafolio = (cdts) => {
 
     totales.inversionTotal += cdt.valor;
     totales.interesBrutoTotal += cdt.totalInteresBruto;
+    totales.baseNoGravadaTotal += cdt.totalBaseNoGravada;
     totales.retencionTotal += cdt.totalRetencion;
     totales.saludTotal += cdt.totalSalud;
     totales.pensionTotal += cdt.totalPension;

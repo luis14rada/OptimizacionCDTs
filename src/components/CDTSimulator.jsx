@@ -1,7 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import { recalcularPortafolio, calcularInversionMaximaOptima, validarCDT, SMMLV_2026 } from '../OptimizationEngine';
+import { recalcularPortafolio, calcularInversionMaximaOptima, validarCDT } from '../OptimizationEngine';
 import PortfolioChart from './PortfolioChart';
-import { exportarPortafolioPDF } from '../pdfExport';
+import ParametrosPanel from './ParametrosPanel';
+import ComparadorEscenarios from './ComparadorEscenarios';
+import { PARAMETROS_POR_DEFECTO, parametrosPorDefecto, SITUACIONES_LABORALES } from '../parametros';
+import useEstadoPersistido from '../hooks/useEstadoPersistido';
+import { leerAlmacenado } from '../almacenamiento';
+
+const porcentaje = (v) => `${(v * 100).toFixed(2).replace(/\.?0+$/, '')}%`;
 
 const formatCurrency = (value) => {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
@@ -80,16 +86,89 @@ const exportarCSV = (cdts, totales) => {
 };
 
 export default function CDTSimulator() {
-  const [rawCdts, setRawCdts] = useState([]);
+  // Dos escenarios comparables. Cada uno tiene sus propios CDTs y sus propios
+  // supuestos, para poder contrastar no solo dos portafolios sino el mismo
+  // portafolio bajo condiciones distintas.
+  const [escenarios, setEscenarios] = useEstadoPersistido('escenarios', () => ({
+    A: {
+      nombre: 'Escenario A',
+      // Migración desde la versión anterior, que guardaba un solo portafolio.
+      cdts: leerAlmacenado('portafolio', []),
+      parametros: leerAlmacenado('parametros', PARAMETROS_POR_DEFECTO)
+    },
+    B: null
+  }));
+  const [escenarioActivo, setEscenarioActivo] = useState('A');
+
+  const hayComparacion = Boolean(escenarios.B);
+  const actual = escenarios[escenarioActivo] || escenarios.A;
+
+  const rawCdts = actual.cdts;
+  const parametros = actual.parametros;
+
+  const actualizarEscenario = (cambios) => {
+    setEscenarios(prev => ({
+      ...prev,
+      [escenarioActivo]: { ...prev[escenarioActivo], ...cambios }
+    }));
+  };
+
+  const setRawCdts = (siguiente) => {
+    actualizarEscenario({
+      cdts: typeof siguiente === 'function' ? siguiente(rawCdts) : siguiente
+    });
+  };
+
+  const setParametros = (siguiente) => {
+    actualizarEscenario({
+      parametros: typeof siguiente === 'function' ? siguiente(parametros) : siguiente
+    });
+  };
+
+  const duplicarEscenario = () => {
+    setEscenarios(prev => ({
+      ...prev,
+      B: {
+        nombre: 'Escenario B',
+        cdts: prev.A.cdts.map(c => ({ ...c, id: `${c.id}-b` })),
+        parametros: { ...prev.A.parametros }
+      }
+    }));
+    setEscenarioActivo('B');
+  };
+
+  const eliminarComparacion = () => {
+    setEscenarios(prev => ({ ...prev, B: null }));
+    setEscenarioActivo('A');
+  };
+
   const [form, setForm] = useState(CAMPOS_INICIALES);
   const [errores, setErrores] = useState({});
   const [maxInversionCalc, setMaxInversionCalc] = useState(null);
   const [avisoTope, setAvisoTope] = useState('');
+  const [generandoPDF, setGenerandoPDF] = useState(false);
+  const [errorPDF, setErrorPDF] = useState('');
+
+  // Los parámetros guardados pueden venir de una versión anterior: se completan
+  // con los valores por defecto para que nunca falte una clave.
+  const parametrosActivos = useMemo(
+    () => ({ ...PARAMETROS_POR_DEFECTO, ...parametros }),
+    [parametros]
+  );
 
   const portfolioData = useMemo(() => {
     if (rawCdts.length === 0) return { cdts: [], totales: null };
-    return recalcularPortafolio(rawCdts);
-  }, [rawCdts]);
+    return recalcularPortafolio(rawCdts, parametrosActivos);
+  }, [rawCdts, parametrosActivos]);
+
+  const resultadoOtroEscenario = useMemo(() => {
+    const otro = escenarioActivo === 'A' ? escenarios.B : escenarios.A;
+    if (!otro || otro.cdts.length === 0) return null;
+    return recalcularPortafolio(otro.cdts, { ...PARAMETROS_POR_DEFECTO, ...otro.parametros });
+  }, [escenarios, escenarioActivo]);
+
+  const situacion = SITUACIONES_LABORALES[parametrosActivos.situacionLaboral] || SITUACIONES_LABORALES.rentista;
+  const smmlvActivo = parametrosActivos.smmlv;
 
   const actualizarCampo = (campo, valor) => {
     setForm(f => ({ ...f, [campo]: valor }));
@@ -149,14 +228,62 @@ export default function CDTSimulator() {
     }
 
     setAvisoTope('');
-    const max = calcularInversionMaximaOptima(tasa / 100, form.frecuenciaPago, plazo);
+    const max = calcularInversionMaximaOptima(tasa / 100, form.frecuenciaPago, plazo, parametrosActivos);
     setMaxInversionCalc(max);
+  };
+
+  // El generador de PDF pesa cientos de KB y la mayoría de visitantes nunca
+  // exporta: se descarga solo cuando se pulsa el botón.
+  const descargarPDF = async () => {
+    if (!portfolioData.totales) return;
+    setGenerandoPDF(true);
+    try {
+      const { exportarPortafolioPDF } = await import('../pdfExport');
+      exportarPortafolioPDF(portfolioData.cdts, portfolioData.totales, parametrosActivos);
+    } catch {
+      setErrorPDF('No se pudo generar el PDF. Intenta de nuevo.');
+    } finally {
+      setGenerandoPDF(false);
+    }
   };
 
   const campoInvalido = (campo) => Boolean(errores[campo]);
 
   return (
     <div className="space-y-8">
+
+      {hayComparacion && (
+        <div className="glass-card p-3 flex flex-wrap items-center gap-2 print:hidden" role="group" aria-label="Escenario en edición">
+          <span className="text-sm font-semibold px-2">Editando:</span>
+          {['A', 'B'].map(clave => (
+            <button
+              key={clave}
+              type="button"
+              onClick={() => setEscenarioActivo(clave)}
+              aria-pressed={escenarioActivo === clave}
+              className={escenarioActivo === clave
+                ? 'btn-primary py-1.5 px-4 text-sm'
+                : 'btn-secondary py-1.5 px-4 text-sm'}
+            >
+              {escenarios[clave].nombre}
+              <span className="opacity-70"> · {escenarios[clave].cdts.length} CDT{escenarios[clave].cdts.length === 1 ? '' : 's'}</span>
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={eliminarComparacion}
+            className="text-sm text-red-500 hover:text-red-700 dark:text-red-400 font-medium ml-auto px-2"
+          >
+            Quitar comparación
+          </button>
+        </div>
+      )}
+
+      <ParametrosPanel
+        parametros={parametrosActivos}
+        onCambiar={setParametros}
+        onRestaurar={() => setParametros(parametrosPorDefecto(parametrosActivos.anioGravable))}
+      />
 
       {/* Section 1: Optimization Calculator */}
       <section className="glass-card p-6 md:p-8 print:hidden">
@@ -290,7 +417,7 @@ export default function CDTSimulator() {
               Inversión máxima recomendada (Frecuencia: {FRECUENCIA_LABELS[form.frecuenciaPago]}): <span className="font-bold">{formatCurrency(maxInversionCalc)}</span>
             </p>
             <p className="text-sm text-green-700 dark:text-green-400 mt-1">
-              Con esta inversión, el interés recibido en cada pago no superará 1 SMMLV 2026 ({formatCurrency(SMMLV_2026)}), evitándote legalmente el pago de Salud y Pensión (asumiendo que no tienes otros CDTs).
+              Con esta inversión, el interés recibido en cada pago no superará 1 SMMLV de {parametrosActivos.anioGravable} ({formatCurrency(smmlvActivo)}), evitándote legalmente el pago de Salud y Pensión (asumiendo que no tienes otros CDTs).
             </p>
           </div>
         )}
@@ -318,15 +445,30 @@ export default function CDTSimulator() {
               >
                 Exportar CSV
               </button>
+              {!hayComparacion && (
+                <button
+                  type="button"
+                  onClick={duplicarEscenario}
+                  className="btn-secondary whitespace-nowrap"
+                  title="Crea una copia para comparar dos supuestos distintos"
+                >
+                  Comparar escenarios
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => exportarPortafolioPDF(portfolioData.cdts, portfolioData.totales)}
-                className="btn-secondary whitespace-nowrap"
+                onClick={descargarPDF}
+                disabled={generandoPDF}
+                className="btn-secondary whitespace-nowrap disabled:opacity-60"
               >
-                Descargar PDF
+                {generandoPDF ? 'Generando…' : 'Descargar PDF'}
               </button>
             </div>
           </div>
+
+          {errorPDF && (
+            <p role="alert" className="text-sm text-red-600 dark:text-red-400">{errorPDF}</p>
+          )}
 
           {/* Dynamic SS Notification Banner */}
           {portfolioData.totales.segSocialTotal > 0 ? (
@@ -337,7 +479,9 @@ export default function CDTSimulator() {
                   Atención: Estás activando pagos de Seguridad Social
                 </p>
                 <p className="text-sm text-orange-800 dark:text-orange-300 mt-1">
-                  En uno o más meses de tu simulación, la suma de los intereses de todos tus CDTs supera 1 SMMLV ($1.750.905 COP).
+                  {situacion.aplicaPiso
+                    ? <>En uno o más meses de tu simulación, la suma de los intereses de todos tus CDTs supera 1 SMMLV ({formatCurrency(smmlvActivo)}). </>
+                    : <>Como ya cotizas por otros ingresos, tus rentas de capital aportan desde el primer peso, sin el piso de 1 SMMLV. </>}
                   Por obligación de la UGPP, pagarás un total acumulado de <span className="font-bold">{formatCurrency(portfolioData.totales.segSocialTotal)}</span> en Seguridad Social a lo largo de tu inversión.
                   Revisa las columnas de Salud y Pensión para ver la distribución exacta.
                 </p>
@@ -351,10 +495,18 @@ export default function CDTSimulator() {
                   ¡Excelente! Tu portafolio está optimizado
                 </p>
                 <p className="text-sm text-green-800 dark:text-green-300 mt-1">
-                  Tus vencimientos e intereses están distribuidos de forma que <strong>en ningún mes</strong> superas el tope de 1 SMMLV ($1.750.905 COP).
+                  Tus vencimientos e intereses están distribuidos de forma que <strong>en ningún mes</strong> superas el tope de 1 SMMLV ({formatCurrency(smmlvActivo)}).
                   Por ende, tienes cero obligación de cotizar como rentista de capital bajo esta simulación.
                 </p>
               </div>
+            </div>
+          )}
+
+          {parametrosActivos.componenteInflacionarioActivo && portfolioData.totales.baseNoGravadaTotal > 0 && (
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl text-sm text-blue-900 dark:text-blue-200">
+              Componente inflacionario aplicado al {porcentaje(parametrosActivos.componenteInflacionario)}:{' '}
+              <span className="font-bold">{formatCurrency(portfolioData.totales.baseNoGravadaTotal)}</span> de tus
+              rendimientos quedan fuera de la base gravada, lo que reduce la retención en la fuente.
             </div>
           )}
 
@@ -367,9 +519,9 @@ export default function CDTSimulator() {
                 <th scope="col" className="py-3 px-4">Valor Invertido</th>
                 <th scope="col" className="py-3 px-4">Tasa EA</th>
                 <th scope="col" className="py-3 px-4">Intereses Brutos</th>
-                <th scope="col" className="py-3 px-4">Retención (4%)</th>
-                <th scope="col" className="py-3 px-4 text-blue-600 dark:text-blue-400">Pago Salud (12.5%)</th>
-                <th scope="col" className="py-3 px-4 text-purple-600 dark:text-purple-400">Pago Pensión (16%)</th>
+                <th scope="col" className="py-3 px-4">Retención ({porcentaje(parametrosActivos.retencion)})</th>
+                <th scope="col" className="py-3 px-4 text-blue-600 dark:text-blue-400">Pago Salud ({porcentaje(parametrosActivos.tarifaSalud)})</th>
+                <th scope="col" className="py-3 px-4 text-purple-600 dark:text-purple-400">Pago Pensión ({porcentaje(parametrosActivos.tarifaPension)})</th>
                 <th scope="col" className="py-3 px-4 text-orange-600 dark:text-orange-400">Seg. Social (Total)</th>
                 <th scope="col" className="py-3 px-4 font-bold text-primary-600 dark:text-primary-400">Intereses Netos</th>
                 <th scope="col" className="py-3 px-4">Final Plazo</th>
@@ -419,6 +571,15 @@ export default function CDTSimulator() {
             </tbody>
           </table>
         </section>
+      )}
+
+      {hayComparacion && (
+        <ComparadorEscenarios
+          escenarioA={escenarios.A}
+          escenarioB={escenarios.B}
+          resultadoA={escenarioActivo === 'A' ? portfolioData : resultadoOtroEscenario}
+          resultadoB={escenarioActivo === 'B' ? portfolioData : resultadoOtroEscenario}
+        />
       )}
 
       {/* Info Notice */}

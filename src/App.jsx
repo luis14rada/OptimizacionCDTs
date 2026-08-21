@@ -35,7 +35,7 @@ function App() {
 
         {/* Footer */}
         <footer className="text-center text-slate-500 dark:text-slate-400 text-sm mt-12 md:mt-16 pt-8 border-t border-slate-200 dark:border-slate-800 space-y-2">
-          <p>Valores de referencia para 2026. SMMLV: $1.750.905 COP. Retención en la fuente: 4%. Costos Presuntos UGPP: 27.5%.</p>
+          <p>Los valores de referencia (SMMLV, retención, costos presuntos) son configurables en el panel «Parámetros de cálculo».</p>
           <p className="text-xs">
             Este simulador es una herramienta informativa y no reemplaza la asesoría de un contador o profesional. Valida siempre tu caso particular antes de tomar decisiones.
           </p>

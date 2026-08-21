@@ -1,6 +1,8 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { SMMLV_2026 } from './OptimizationEngine';
+import { PARAMETROS_POR_DEFECTO, SITUACIONES_LABORALES } from './parametros';
+
+const porcentaje = (v) => `${(v * 100).toFixed(2).replace(/\.?0+$/, '')}%`;
 
 const formatCurrency = (value) => {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
@@ -27,7 +29,9 @@ const COLOR_GREEN_BG = [240, 253, 244]; // green-50
  * Usa jsPDF + autoTable para tener control total de columnas, paginación
  * automática y encabezados repetidos, en vez de depender de window.print().
  */
-export const exportarPortafolioPDF = (cdts, totales) => {
+export const exportarPortafolioPDF = (cdts, totales, parametros = PARAMETROS_POR_DEFECTO) => {
+  const p = { ...PARAMETROS_POR_DEFECTO, ...parametros };
+  const situacion = SITUACIONES_LABORALES[p.situacionLaboral] || SITUACIONES_LABORALES.rentista;
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'letter' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 36;
@@ -46,7 +50,17 @@ export const exportarPortafolioPDF = (cdts, totales) => {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(...COLOR_MUTED);
-  doc.text(`Generado el ${fechaGeneracion}`, margin, 58);
+  const supuestos = [
+    `Año gravable ${p.anioGravable}`,
+    `Retención ${porcentaje(p.retencion)}`,
+    situacion.etiqueta,
+    `Costos presuntos ${porcentaje(p.costosPresuntos)}`,
+    p.componenteInflacionarioActivo
+      ? `Componente inflacionario ${porcentaje(p.componenteInflacionario)}`
+      : 'Sin componente inflacionario'
+  ].join(' · ');
+
+  doc.text(`Generado el ${fechaGeneracion}  ·  ${supuestos}`, margin, 58);
 
   // --- Aviso legal ---
   const disclaimer =
@@ -73,8 +87,10 @@ export const exportarPortafolioPDF = (cdts, totales) => {
     ? 'Atención: este portafolio activa pagos de Seguridad Social'
     : 'Portafolio optimizado: no activa pagos de Seguridad Social';
   const bannerDetalle = activaSegSocial
-    ? `En uno o más meses la suma de intereses supera 1 SMMLV (${formatCurrency(SMMLV_2026)}). Total acumulado en Seguridad Social: ${formatCurrency(totales.segSocialTotal)}.`
-    : `En ningún mes la suma de intereses supera 1 SMMLV (${formatCurrency(SMMLV_2026)}). Sin obligación de cotizar como rentista de capital.`;
+    ? `${situacion.aplicaPiso
+        ? `En uno o más meses la suma de intereses supera 1 SMMLV (${formatCurrency(p.smmlv)}).`
+        : 'Como ya cotizas por otros ingresos, las rentas de capital aportan sin el piso de 1 SMMLV.'} Total acumulado en Seguridad Social: ${formatCurrency(totales.segSocialTotal)}.`
+    : `En ningún mes la suma de intereses supera 1 SMMLV (${formatCurrency(p.smmlv)}). Sin obligación de cotizar como rentista de capital.`;
 
   doc.setFillColor(...bannerColor);
   doc.roundedRect(margin, cursorY, pageWidth - margin * 2, 34, 4, 4, 'F');
@@ -91,8 +107,9 @@ export const exportarPortafolioPDF = (cdts, totales) => {
   // --- Tabla principal (con paginación y encabezados automáticos) ---
   const columnas = [
     'Fecha Venc.', 'Banco', 'Valor Invertido', 'Tasa EA', 'Frecuencia',
-    'Intereses Brutos', 'Retención', 'Salud', 'Pensión', 'Seg. Social',
-    'Interés Neto', 'Valor Final'
+    'Intereses Brutos', `Retención (${porcentaje(p.retencion)})`,
+    `Salud (${porcentaje(p.tarifaSalud)})`, `Pensión (${porcentaje(p.tarifaPension)})`,
+    'Seg. Social', 'Interés Neto', 'Valor Final'
   ];
 
   const filas = cdts.map(cdt => ([
@@ -159,7 +176,7 @@ export const exportarPortafolioPDF = (cdts, totales) => {
       doc.setFontSize(7.5);
       doc.setTextColor(...COLOR_MUTED);
       doc.text(
-        'Valores de referencia 2026 · SMMLV: $1.750.905 COP · Retención en la fuente: 4% · Costos Presuntos UGPP: 27.5% · No reemplaza asesoría profesional.',
+        `SMMLV ${p.anioGravable}: ${formatCurrency(p.smmlv)} · Tope IBC: ${p.topeIbcSmmlv} SMMLV · ${supuestos} · No reemplaza asesoría profesional.`,
         margin,
         alturaPagina - 16
       );
