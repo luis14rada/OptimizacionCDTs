@@ -1,0 +1,199 @@
+import { describe, it, expect } from 'vitest';
+import {
+  SMMLV_2026,
+  calcularTasaPeriodica,
+  calcularSeguridadSocial,
+  calcularInversionMaximaOptima,
+  validarCDT,
+  recalcularPortafolio
+} from './OptimizationEngine';
+
+const cdtBase = (overrides = {}) => ({
+  id: Math.random(),
+  banco: 'Banco de Prueba',
+  valor: 10000000,
+  tasaEA: 10,
+  frecuenciaPago: 'mensual',
+  plazoMeses: 1,
+  fechaInicio: '2026-01-15',
+  fechaVencimiento: '2026-02-15',
+  ...overrides
+});
+
+describe('calcularTasaPeriodica', () => {
+  it('con un solo periodo al año, la tasa periódica es igual a la tasa E.A.', () => {
+    expect(calcularTasaPeriodica(0.10, 1)).toBeCloseTo(0.10, 10);
+  });
+
+  it('convierte correctamente una tasa E.A. a tasa mensual (12 periodos)', () => {
+    // (1.12)^(1/12) - 1
+    const esperado = Math.pow(1.12, 1 / 12) - 1;
+    expect(calcularTasaPeriodica(0.12, 12)).toBeCloseTo(esperado, 12);
+  });
+});
+
+describe('calcularSeguridadSocial', () => {
+  it('no cobra seguridad social por debajo de 1 SMMLV', () => {
+    const resultado = calcularSeguridadSocial(SMMLV_2026 - 1);
+    expect(resultado).toEqual({ ibc: 0, salud: 0, pension: 0, total: 0, excedeTope: false });
+  });
+
+  it('activa seguridad social justo en el límite de 1 SMMLV (aplica el piso del IBC)', () => {
+    const resultado = calcularSeguridadSocial(SMMLV_2026);
+    expect(resultado.excedeTope).toBe(true);
+    // El IBC calculado (SMMLV * 0.725 * 0.40) es menor al SMMLV, así que se usa el piso de 1 SMMLV.
+    expect(resultado.ibc).toBeCloseTo(SMMLV_2026, 6);
+    expect(resultado.salud).toBeCloseTo(SMMLV_2026 * 0.125, 6);
+    expect(resultado.pension).toBeCloseTo(SMMLV_2026 * 0.16, 6);
+  });
+
+  it('calcula el IBC real cuando supera el piso de 1 SMMLV', () => {
+    // Ingreso alto: 20.000.000 -> IBC calculado = 20.000.000 * 0.725 * 0.40 = 5.800.000 (> SMMLV)
+    const resultado = calcularSeguridadSocial(20000000);
+    expect(resultado.excedeTope).toBe(true);
+    expect(resultado.ibc).toBeCloseTo(5800000, 2);
+    expect(resultado.salud).toBeCloseTo(725000, 2);
+    expect(resultado.pension).toBeCloseTo(928000, 2);
+    expect(resultado.total).toBeCloseTo(1653000, 2);
+  });
+});
+
+describe('calcularInversionMaximaOptima', () => {
+  it('el resultado recomendado no activa seguridad social, pero invertir bastante más sí', () => {
+    const tasaEA = 0.115;
+    const frecuencia = 'mensual';
+    const plazo = 12;
+
+    const maxInversion = calcularInversionMaximaOptima(tasaEA, frecuencia, plazo);
+    const tasaPeriodica = calcularTasaPeriodica(tasaEA, 12);
+
+    const interesConMax = maxInversion * tasaPeriodica;
+    // Nos alejamos varios pesos del límite para evitar ambigüedad por redondeo de punto flotante
+    // justo en el borde; lo que importa es la relación por debajo/por encima del tope.
+    const interesConBastanteMas = (maxInversion + 1000) * tasaPeriodica;
+
+    expect(calcularSeguridadSocial(interesConMax).excedeTope).toBe(false);
+    expect(calcularSeguridadSocial(interesConBastanteMas).excedeTope).toBe(true);
+  });
+
+  it('con pago al vencimiento, usa la tasa acumulada de todo el plazo (no la tasa mensual)', () => {
+    const maxVencimiento = calcularInversionMaximaOptima(0.10, 'al_vencimiento', 12);
+    const maxMensual = calcularInversionMaximaOptima(0.10, 'mensual', 12);
+
+    // Al vencimiento el interés se recibe todo de una vez, con la tasa E.A. completa,
+    // así que el tope de inversión permitido debe ser mucho menor que pagando mensual.
+    expect(maxVencimiento).toBeLessThan(maxMensual);
+    expect(maxVencimiento).toBeGreaterThan(0);
+  });
+});
+
+describe('validarCDT', () => {
+  const formValido = () => ({
+    banco: 'Bancolombia',
+    valor: '10000000',
+    tasaEA: '11.5',
+    plazoMeses: '12',
+    frecuenciaPago: 'mensual',
+    fechaInicio: '2026-01-15'
+  });
+
+  it('no reporta errores para un formulario válido', () => {
+    expect(validarCDT(formValido())).toEqual({});
+  });
+
+  it('exige el nombre del banco', () => {
+    const errores = validarCDT({ ...formValido(), banco: '  ' });
+    expect(errores.banco).toBeDefined();
+  });
+
+  it('rechaza un valor invertido en cero o negativo', () => {
+    expect(validarCDT({ ...formValido(), valor: '0' }).valor).toBeDefined();
+    expect(validarCDT({ ...formValido(), valor: '-5000' }).valor).toBeDefined();
+  });
+
+  it('rechaza una tasa E.A. mayor al 50%', () => {
+    expect(validarCDT({ ...formValido(), tasaEA: '75' }).tasaEA).toBeDefined();
+  });
+
+  it('rechaza un plazo más corto que la frecuencia de pago elegida', () => {
+    const errores = validarCDT({ ...formValido(), frecuenciaPago: 'anual', plazoMeses: '6' });
+    expect(errores.plazoMeses).toBeDefined();
+  });
+
+  it('exige una fecha de inicio', () => {
+    expect(validarCDT({ ...formValido(), fechaInicio: '' }).fechaInicio).toBeDefined();
+  });
+});
+
+describe('recalcularPortafolio', () => {
+  it('no cobra seguridad social si el ingreso mensual consolidado no supera el tope', () => {
+    const cdt = cdtBase({ valor: 1000000, tasaEA: 5 });
+    const resultado = recalcularPortafolio([cdt]);
+
+    expect(resultado.totales.segSocialTotal).toBe(0);
+    expect(resultado.cdts[0].totalSegSocial).toBe(0);
+    expect(resultado.totales.flujoMensual).toHaveLength(1);
+    expect(resultado.totales.flujoMensual[0].excedeTope).toBe(false);
+  });
+
+  it('consolida y prorratea la seguridad social entre CDTs que pagan el mismo mes', () => {
+    const tasaPeriodica = calcularTasaPeriodica(0.12, 12);
+    const cdtA = cdtBase({ valor: 10000000, tasaEA: 12, fechaInicio: '2026-03-10' });
+    const cdtB = cdtBase({ valor: 20000000, tasaEA: 12, fechaInicio: '2026-03-10' });
+
+    const interesA = 10000000 * tasaPeriodica;
+    const interesB = 20000000 * tasaPeriodica;
+    const ingresoTotalMes = interesA + interesB;
+    const segSocialEsperada = calcularSeguridadSocial(ingresoTotalMes);
+
+    const resultado = recalcularPortafolio([cdtA, cdtB]);
+
+    // Ambos pagan en el mismo mes calendario, así que deben consolidarse en un solo flujo mensual.
+    expect(resultado.totales.flujoMensual).toHaveLength(1);
+    expect(resultado.totales.flujoMensual[0].ingresoBrutoMes).toBeCloseTo(ingresoTotalMes, 4);
+
+    // El total de seguridad social del portafolio debe coincidir con el cálculo consolidado (no la suma de cada CDT por separado).
+    expect(resultado.totales.segSocialTotal).toBeCloseTo(segSocialEsperada.total, 4);
+
+    // Se debe prorratear proporcionalmente al aporte de intereses de cada CDT.
+    const [procesadoA, procesadoB] = resultado.cdts;
+    expect(procesadoA.totalSegSocial).toBeCloseTo(segSocialEsperada.total * (interesA / ingresoTotalMes), 4);
+    expect(procesadoB.totalSegSocial).toBeCloseTo(segSocialEsperada.total * (interesB / ingresoTotalMes), 4);
+
+    // La suma de lo prorrateado no debe perder ni sumar de más respecto al total.
+    expect(procesadoA.totalSegSocial + procesadoB.totalSegSocial).toBeCloseTo(resultado.totales.segSocialTotal, 6);
+  });
+
+  it('calcula los totales del portafolio como la suma de cada CDT', () => {
+    const cdtA = cdtBase({ valor: 5000000, tasaEA: 8, fechaInicio: '2026-01-01' });
+    const cdtB = cdtBase({ valor: 3000000, tasaEA: 9, fechaInicio: '2026-05-01' });
+
+    const resultado = recalcularPortafolio([cdtA, cdtB]);
+
+    expect(resultado.totales.inversionTotal).toBe(8000000);
+    expect(resultado.totales.interesBrutoTotal).toBeCloseTo(
+      resultado.cdts[0].totalInteresBruto + resultado.cdts[1].totalInteresBruto,
+      6
+    );
+    expect(resultado.totales.interesNetoTotal).toBeCloseTo(
+      resultado.cdts[0].totalInteresNeto + resultado.cdts[1].totalInteresNeto,
+      6
+    );
+  });
+
+  it('el flujo mensual queda ordenado cronológicamente', () => {
+    const cdt = cdtBase({
+      frecuenciaPago: 'mensual',
+      plazoMeses: 3,
+      fechaInicio: '2026-06-01',
+      valor: 1000000,
+      tasaEA: 5
+    });
+
+    const resultado = recalcularPortafolio([cdt]);
+    const meses = resultado.totales.flujoMensual.map(f => f.mesKey);
+    const mesesOrdenados = [...meses].sort();
+    expect(meses).toEqual(mesesOrdenados);
+    expect(meses).toHaveLength(3);
+  });
+});
