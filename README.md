@@ -80,6 +80,7 @@ La app queda en `http://localhost:5173`.
 | `npm run lint` | Análisis estático con Oxlint |
 | `npm test` | Corre toda la suite de pruebas una vez |
 | `npm run test:watch` | Pruebas en modo watch |
+| `npm run test:coverage` | Pruebas con reporte de cobertura (ver sección de abajo) |
 
 ## Pruebas
 
@@ -87,8 +88,11 @@ El proyecto usa [Vitest](https://vitest.dev/) y [React Testing Library](https://
 
 - `src/OptimizationEngine.test.js` — la lógica de cálculo: tasas periódicas, seguridad social, validaciones y la consolidación/prorrateo mensual del portafolio. Es la parte crítica: un error aquí significa un cálculo incorrecto para un usuario real.
 - `src/components/CDTSimulator.test.jsx` — validaciones del formulario, agregar y eliminar CDTs, cálculo del tope máximo, y exportación a PDF.
-- `src/components/DisclaimerModal.test.jsx` — el aviso legal y que solo se cierre al aceptarlo explícitamente.
+- `src/components/DisclaimerModal.test.jsx` — el aviso legal, que solo se cierre al aceptarlo explícitamente, y que el foco quede atrapado dentro del modal.
 - `src/components/ThemeToggle.test.jsx` — alternancia de tema claro/oscuro.
+- `src/components/PortfolioChart.test.jsx` — el gráfico de flujo mensual y su tabla accesible equivalente para lectores de pantalla.
+- `src/components/ErrorBoundary.test.jsx` — que un error de render muestre un mensaje en vez de pantalla en blanco.
+- `src/pdfExport.test.js` — la generación real del PDF (jsPDF sin mockear), incluidos los distintos banners y el uso del año gravable correcto.
 - `src/parametros.test.js` — los parámetros configurables: retención, componente inflacionario, situación laboral y constantes por año.
 - `src/components/ParametrosPanel.test.jsx` — el panel de parámetros.
 - `src/components/ComparadorEscenarios.test.jsx` — la comparación A/B.
@@ -98,7 +102,20 @@ de cálculo detectados en una auditoría: el techo de 25 SMMLV que faltaba, los 
 que se perdían cuando el plazo no era múltiplo de la frecuencia, y el desbordamiento de fechas a
 fin de mes. Cada una se escribió antes del arreglo y fallaba con el código anterior.
 
-Cada push y cada pull request ejecuta lint, pruebas y build automáticamente vía GitHub Actions.
+### Cobertura
+
+`npm run test:coverage` corre la suite con [`@vitest/coverage-v8`](https://vitest.dev/guide/coverage.html)
+y genera un reporte en texto (consola), HTML (`coverage/index.html`) y `coverage/coverage-summary.json`.
+El CI falla si la cobertura global baja de: 80% statements, 65% branches, 70% functions, 80% lines
+(medido el 24 de agosto de 2026: 83,26% / 70,18% / 75,2% / 84,51% — el umbral queda unos puntos por
+debajo como margen).
+
+> La tabla que Vitest imprime en consola tiene un bug conocido en esta versión: omite algunos
+> archivos con pruebas de la tabla (confirmado inspeccionando el JSON crudo: los datos están completos
+> y el número agregado es correcto). Para el detalle por archivo, abrí `coverage/index.html` en el
+> navegador en vez de confiar en la tabla de la terminal.
+
+Cada push y cada pull request ejecuta lint, pruebas con cobertura y build automáticamente vía GitHub Actions.
 
 > Al agregar una funcionalidad o modificar `OptimizationEngine.js`, agrega o actualiza sus pruebas antes de dar el cambio por terminado.
 
@@ -112,6 +129,7 @@ src/
 ├── pdfExport.js            # Generación del PDF (se carga solo al exportar)
 ├── vacio.js                # Stub que saca html2canvas y dompurify del bundle
 ├── App.jsx                 # Layout general
+├── main.jsx                # Punto de entrada: monta <App /> dentro del ErrorBoundary
 ├── hooks/
 │   ├── useTheme.js             # Tema claro/oscuro persistido
 │   └── useEstadoPersistido.js  # useState que recuerda entre visitas
@@ -121,7 +139,8 @@ src/
     ├── ComparadorEscenarios.jsx# Comparación A/B
     ├── PortfolioChart.jsx      # Gráfico de flujo mensual
     ├── DisclaimerModal.jsx     # Aviso legal de entrada
-    └── ThemeToggle.jsx         # Botón de tema
+    ├── ThemeToggle.jsx         # Botón de tema
+    └── ErrorBoundary.jsx       # Pantalla de error ante un fallo de render
 ```
 
 Toda la lógica financiera vive en `OptimizationEngine.js`, aislada de React, para que sea fácil de probar y auditar.
