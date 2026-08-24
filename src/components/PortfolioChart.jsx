@@ -41,7 +41,12 @@ export default function PortfolioChart({ flujoMensual, smmlv }) {
         </span>
       </div>
 
-      <div className="relative pl-2 pr-1">
+      {/*
+        Las barras solo llevan el dato en `title`, que los lectores de pantalla
+        no anuncian de forma fiable -- se ocultan del árbol de accesibilidad y
+        la tabla de abajo queda como la única fuente de verdad para ese caso.
+      */}
+      <div className="relative pl-2 pr-1" aria-hidden="true">
         {/* Línea de referencia del tope de 1 SMMLV */}
         <div
           className="absolute top-0 bottom-0 border-l-2 border-dashed border-slate-400 dark:border-slate-500 z-10"
@@ -79,6 +84,40 @@ export default function PortfolioChart({ flujoMensual, smmlv }) {
             );
           })}
         </ul>
+      </div>
+
+      {/*
+        Alternativa accesible al gráfico: mismos datos, oculta visualmente.
+        El `sr-only` va en el div contenedor, no en el <table> directamente:
+        una tabla no se deja encoger a 1px por CSS porque su ancho mínimo lo
+        marca el contenido, así que puesto en la tabla misma queda con una
+        caja real (medido: 659×336px) que generaba scroll horizontal en toda
+        la página.
+      */}
+      <div className="sr-only">
+        <table>
+          <caption>
+            Flujo de intereses brutos por mes, comparado contra el tope de 1 SMMLV ({formatCurrency(smmlv)})
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Mes</th>
+              <th scope="col">Intereses brutos</th>
+              <th scope="col">¿Supera el tope de 1 SMMLV?</th>
+              <th scope="col">Seguridad social</th>
+            </tr>
+          </thead>
+          <tbody>
+            {flujoMensual.map((mes) => (
+              <tr key={mes.mesKey}>
+                <td>{formatMes(mes.mesKey)}</td>
+                <td>{formatCurrency(mes.ingresoBrutoMes)}</td>
+                <td>{mes.excedeTope ? 'Sí' : 'No'}</td>
+                <td>{mes.segSocialMes > 0 ? formatCurrency(mes.segSocialMes) : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </section>
   );
