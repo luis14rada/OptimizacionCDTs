@@ -4,15 +4,15 @@ Estado a 24 de agosto de 2026. Salió de una auditoría del código y de dos
 investigaciones sobre el mercado colombiano. La versión con el detalle completo
 de cada propuesta está en el documento de ruta compartido aparte.
 
-**Ya desplegado en producción** (commit `21fde9d`): los tres errores de cálculo,
+**Ya desplegado en producción** (commit `30c3991`): los tres errores de cálculo,
 los parámetros configurables, la persistencia, la comparación de escenarios A/B,
 la carga inicial reducida de 877 KB a 263 KB, la tipografía Inter, el focus trap
 del modal de aviso legal, las pruebas de `pdfExport.js` y `PortfolioChart.jsx`,
-y el bug del SMMLV fijo en el gráfico que no seguía el año gravable seleccionado.
+el bug del SMMLV fijo en el gráfico que no seguía el año gravable seleccionado,
+y la tabla accesible equivalente al gráfico de flujo mensual.
 
-**Resuelto y verificado, en PR pendiente de merge**: tabla accesible equivalente
-al gráfico de flujo mensual (`PortfolioChart.jsx`), para quien usa lector de
-pantalla. Suite en 91 pruebas.
+**Resuelto y verificado, en PR pendiente de merge**: Error Boundary — un error
+de render ya no deja la pantalla en blanco sin explicación. Suite en 94 pruebas.
 
 ---
 
@@ -23,39 +23,35 @@ producir una cifra equivocada o dejar a alguien sin acceso va antes que lo
 cosmético. Se trabaja de arriba hacia abajo, cerrando y verificando cada punto
 antes de pasar al siguiente.
 
-### 1. Sin Error Boundary
-*Calidad e infraestructura.* Un error de render deja la pantalla en blanco sin
-explicación, en una herramienta que se usa para decidir sobre la propia plata.
-
-### 2. Auditar contraste en modo oscuro
+### 1. Auditar contraste en modo oscuro
 *Accesibilidad.* Varios textos de color sobre fondos translúcidos
 (`bg-orange-900/30` y similares) no se han medido contra el criterio 4.5:1 de
 WCAG AA.
 
-### 3. Sin reporte de cobertura
+### 2. Sin reporte de cobertura
 *Calidad e infraestructura.* No hay forma de saber qué porcentaje del motor
-ejercitan las 91 pruebas. `vitest --coverage` y un umbral mínimo en el CI.
+ejercitan las 94 pruebas. `vitest --coverage` y un umbral mínimo en el CI.
 
-### 4. Sin cabeceras de seguridad
+### 3. Sin cabeceras de seguridad
 *Calidad e infraestructura.* Un `vercel.json` con `X-Frame-Options`,
 `X-Content-Type-Options` y una CSP evita que alguien incruste la calculadora en
 un sitio fraudulento y la haga pasar por suya.
 
-### 5. No hay analítica
+### 4. No hay analítica
 *Calidad e infraestructura.* Sin datos no se sabe si entra gente, si agrega CDTs
 o si abandona en el formulario. Vercel Analytics respeta la privacidad, no usa
 cookies y se activa con una línea — coherente con la promesa de privacidad del
 proyecto.
 
-### 6. El favicon sigue siendo el de la plantilla de Vite
+### 5. El favicon sigue siendo el de la plantilla de Vite
 *Calidad e infraestructura.* `public/favicon.svg` es un rayo morado que no dice
 nada del producto. Debería ser coherente con `public/og-image.png`, que sí tiene
 la identidad visual de la app.
 
-### 7. No se puede editar un CDT
+### 6. No se puede editar un CDT
 *Producto.* Corregir una tasa mal digitada obliga a eliminar y volver a crear.
 
-### 8. La pantalla vacía no enseña nada
+### 7. La pantalla vacía no enseña nada
 *Producto.* Al entrar solo hay un formulario en blanco. Un ejemplo precargado con
 un botón de «ver un caso de ejemplo» deja entender la herramienta en tres
 segundos, sin teclear.
@@ -64,7 +60,7 @@ segundos, sin teclear.
 
 ## Hacia dónde puede crecer — nuevas pestañas
 
-**En espera hasta cerrar los ocho puntos anteriores.** Doce propuestas
+**En espera hasta cerrar los siete puntos anteriores.** Doce propuestas
 priorizadas por dolor documentado × facilidad de cálculo × frecuencia. Cada una
 salió de investigar cifras reales del mercado colombiano, no de intuición — por
 eso el orden interno de esta tabla no se tocó al reordenar el resto del backlog.
