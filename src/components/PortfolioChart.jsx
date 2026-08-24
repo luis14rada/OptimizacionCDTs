@@ -1,5 +1,4 @@
 import React from 'react';
-import { SMMLV_2026 } from '../OptimizationEngine';
 
 const formatCurrency = (value) => {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
@@ -13,11 +12,11 @@ const formatMes = (mesKey) => {
   return `${nombreMes} ${anio.slice(2)}`;
 };
 
-export default function PortfolioChart({ flujoMensual }) {
+export default function PortfolioChart({ flujoMensual, smmlv }) {
   if (!flujoMensual || flujoMensual.length === 0) return null;
 
-  const maxValor = Math.max(SMMLV_2026, ...flujoMensual.map(f => f.ingresoBrutoMes)) * 1.08;
-  const topePorcentaje = (SMMLV_2026 / maxValor) * 100;
+  const maxValor = Math.max(smmlv, ...flujoMensual.map(f => f.ingresoBrutoMes)) * 1.08;
+  const topePorcentaje = (smmlv / maxValor) * 100;
 
   return (
     <section className="glass-card p-6 md:p-8 space-y-5" aria-labelledby="chart-title">
@@ -50,7 +49,7 @@ export default function PortfolioChart({ flujoMensual }) {
           aria-hidden="true"
         >
           <span className="absolute -top-1 left-1 text-[10px] whitespace-nowrap text-slate-500 dark:text-slate-400 bg-white/70 dark:bg-slate-900/70 px-1 rounded">
-            Tope 1 SMMLV ({formatCurrency(SMMLV_2026)})
+            Tope 1 SMMLV ({formatCurrency(smmlv)})
           </span>
         </div>
 
