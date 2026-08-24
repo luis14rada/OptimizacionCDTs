@@ -4,15 +4,29 @@ Estado a 24 de agosto de 2026. Salió de una auditoría del código y de dos
 investigaciones sobre el mercado colombiano. La versión con el detalle completo
 de cada propuesta está en el documento de ruta compartido aparte.
 
-**Ya desplegado en producción** (commit `30c3991`): los tres errores de cálculo,
+**Ya desplegado en producción** (commit `4e4c85d`): los tres errores de cálculo,
 los parámetros configurables, la persistencia, la comparación de escenarios A/B,
 la carga inicial reducida de 877 KB a 263 KB, la tipografía Inter, el focus trap
 del modal de aviso legal, las pruebas de `pdfExport.js` y `PortfolioChart.jsx`,
 el bug del SMMLV fijo en el gráfico que no seguía el año gravable seleccionado,
-y la tabla accesible equivalente al gráfico de flujo mensual.
+la tabla accesible equivalente al gráfico de flujo mensual, y el Error Boundary
+— un error de render ya no deja la pantalla en blanco sin explicación. Suite en
+94 pruebas.
 
-**Resuelto y verificado, en PR pendiente de merge**: Error Boundary — un error
-de render ya no deja la pantalla en blanco sin explicación. Suite en 94 pruebas.
+**Auditado el 24 de agosto de 2026, sin cambios de código necesarios**:
+contraste de color en modo oscuro. Se midieron las 13 combinaciones de texto
+sobre fondo translúcido del proyecto (`bg-orange-900/30` y similares en
+`CDTSimulator.jsx` y `ComparadorEscenarios.jsx`), calculando el color
+compuesto real (paleta OKLCH de Tailwind v4 convertida a sRGB, con
+compositing de las capas de opacidad correspondientes: `glass-card` sobre el
+gradiente del body, y el fondo de color sobre eso) contra el criterio WCAG AA
+de 4.5:1. **Las 13 pasan**, con el caso más ajustado en 5.52:1 (la celda de
+totales de "Seg. Social", `text-orange-400` sobre `bg-orange-900/40`) y el
+resto entre 6.78:1 y 15.67:1. Verificado también a simple vista en el
+navegador en modo oscuro. El script de medición (Node.js, sin dependencias)
+no quedó en el repo por ser una comprobación puntual, no una guardia
+automática — si se agregan combinaciones de color nuevas, hay que volver a
+medir a mano.
 
 ---
 
@@ -23,35 +37,30 @@ producir una cifra equivocada o dejar a alguien sin acceso va antes que lo
 cosmético. Se trabaja de arriba hacia abajo, cerrando y verificando cada punto
 antes de pasar al siguiente.
 
-### 1. Auditar contraste en modo oscuro
-*Accesibilidad.* Varios textos de color sobre fondos translúcidos
-(`bg-orange-900/30` y similares) no se han medido contra el criterio 4.5:1 de
-WCAG AA.
-
-### 2. Sin reporte de cobertura
+### 1. Sin reporte de cobertura
 *Calidad e infraestructura.* No hay forma de saber qué porcentaje del motor
 ejercitan las 94 pruebas. `vitest --coverage` y un umbral mínimo en el CI.
 
-### 3. Sin cabeceras de seguridad
+### 2. Sin cabeceras de seguridad
 *Calidad e infraestructura.* Un `vercel.json` con `X-Frame-Options`,
 `X-Content-Type-Options` y una CSP evita que alguien incruste la calculadora en
 un sitio fraudulento y la haga pasar por suya.
 
-### 4. No hay analítica
+### 3. No hay analítica
 *Calidad e infraestructura.* Sin datos no se sabe si entra gente, si agrega CDTs
 o si abandona en el formulario. Vercel Analytics respeta la privacidad, no usa
 cookies y se activa con una línea — coherente con la promesa de privacidad del
 proyecto.
 
-### 5. El favicon sigue siendo el de la plantilla de Vite
+### 4. El favicon sigue siendo el de la plantilla de Vite
 *Calidad e infraestructura.* `public/favicon.svg` es un rayo morado que no dice
 nada del producto. Debería ser coherente con `public/og-image.png`, que sí tiene
 la identidad visual de la app.
 
-### 6. No se puede editar un CDT
+### 5. No se puede editar un CDT
 *Producto.* Corregir una tasa mal digitada obliga a eliminar y volver a crear.
 
-### 7. La pantalla vacía no enseña nada
+### 6. La pantalla vacía no enseña nada
 *Producto.* Al entrar solo hay un formulario en blanco. Un ejemplo precargado con
 un botón de «ver un caso de ejemplo» deja entender la herramienta en tres
 segundos, sin teclear.
@@ -60,7 +69,7 @@ segundos, sin teclear.
 
 ## Hacia dónde puede crecer — nuevas pestañas
 
-**En espera hasta cerrar los siete puntos anteriores.** Doce propuestas
+**En espera hasta cerrar los seis puntos anteriores.** Doce propuestas
 priorizadas por dolor documentado × facilidad de cálculo × frecuencia. Cada una
 salió de investigar cifras reales del mercado colombiano, no de intuición — por
 eso el orden interno de esta tabla no se tocó al reordenar el resto del backlog.
