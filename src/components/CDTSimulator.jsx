@@ -425,7 +425,7 @@ export default function CDTSimulator() {
 
       {/* Section 2: Chart */}
       {portfolioData.totales && (
-        <PortfolioChart flujoMensual={portfolioData.totales.flujoMensual} />
+        <PortfolioChart flujoMensual={portfolioData.totales.flujoMensual} smmlv={smmlvActivo} />
       )}
 
       {/* Section 3: Results Table */}
