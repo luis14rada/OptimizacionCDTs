@@ -28,4 +28,26 @@ describe('DisclaimerModal', () => {
     expect(onAccept).not.toHaveBeenCalled();
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
+
+  it('atrapa el foco: Tab y Shift+Tab no dejan salir del modal hacia el contenido de atrás', async () => {
+    const user = userEvent.setup();
+
+    // Reproduce el orden real de App.jsx: el modal se monta antes que el resto
+    // del contenido, así que sin trampa de foco el Tab avanzaría hacia este botón.
+    render(
+      <>
+        <DisclaimerModal onAccept={vi.fn()} />
+        <button type="button">Campo del formulario de atrás</button>
+      </>
+    );
+
+    const botonAceptar = screen.getByRole('button', { name: /entiendo y acepto/i });
+    expect(botonAceptar).toHaveFocus();
+
+    await user.tab();
+    expect(botonAceptar).toHaveFocus();
+
+    await user.tab({ shift: true });
+    expect(botonAceptar).toHaveFocus();
+  });
 });

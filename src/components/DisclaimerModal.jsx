@@ -1,6 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 
+const SELECTOR_ENFOCABLE =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export default function DisclaimerModal({ onAccept }) {
+  const modalRef = useRef(null);
   const acceptButtonRef = useRef(null);
 
   useEffect(() => {
@@ -10,6 +14,25 @@ export default function DisclaimerModal({ onAccept }) {
       // Evita cerrar el aviso con Escape: debe aceptarse explícitamente.
       if (e.key === 'Escape') {
         e.preventDefault();
+        return;
+      }
+
+      // Atrapa el foco dentro del modal: sin esto, Tab/Shift+Tab siguen el
+      // orden normal del documento y llegan a controles detrás del overlay.
+      if (e.key !== 'Tab' || !modalRef.current) return;
+
+      const enfocables = modalRef.current.querySelectorAll(SELECTOR_ENFOCABLE);
+      if (enfocables.length === 0) return;
+
+      const primero = enfocables[0];
+      const ultimo = enfocables[enfocables.length - 1];
+
+      if (e.shiftKey && document.activeElement === primero) {
+        e.preventDefault();
+        ultimo.focus();
+      } else if (!e.shiftKey && document.activeElement === ultimo) {
+        e.preventDefault();
+        primero.focus();
       }
     };
 
@@ -19,6 +42,7 @@ export default function DisclaimerModal({ onAccept }) {
 
   return (
     <div
+      ref={modalRef}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
