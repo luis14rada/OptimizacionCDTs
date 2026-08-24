@@ -4,20 +4,24 @@ Estado a 24 de agosto de 2026. Salió de una auditoría del código y de dos
 investigaciones sobre el mercado colombiano. La versión con el detalle completo
 de cada propuesta está en el documento de ruta compartido aparte.
 
-**Ya desplegado en producción** (commit `8829a8e`): los tres errores de cálculo,
+**Ya desplegado en producción** (commit `5ca4e90`): los tres errores de cálculo,
 los parámetros configurables, la persistencia, la comparación de escenarios A/B,
 la carga inicial reducida de 877 KB a 263 KB, la tipografía Inter, el focus trap
 del modal de aviso legal, las pruebas de `pdfExport.js` y `PortfolioChart.jsx`,
 el bug del SMMLV fijo en el gráfico que no seguía el año gravable seleccionado,
-la tabla accesible equivalente al gráfico de flujo mensual, y el Error Boundary
-— un error de render ya no deja la pantalla en blanco sin explicación. Suite en
-94 pruebas.
+la tabla accesible equivalente al gráfico de flujo mensual, el Error Boundary,
+y el reporte de cobertura con umbral mínimo en el CI (ver hallazgo sobre
+`App.jsx` y `useTheme.js` más abajo, en "Hallazgo sin decidir"). Suite en 94
+pruebas.
 
-**Resuelto y verificado, en PR pendiente de merge**: reporte de cobertura con
-`vitest --coverage` (texto + HTML en `coverage/index.html`) y umbral mínimo
-en el CI (80% statements, 65% branches, 70% functions, 80% lines — medido hoy
-en 83,26% / 70,18% / 75,2% / 84,51%). Ver el hallazgo sobre `App.jsx` y
-`useTheme.js` más abajo, en "Hallazgo sin decidir".
+**Resuelto y verificado, en PR pendiente de merge** (primer bundle: varios
+puntos en un solo PR, desde este bloque en adelante): cabeceras de seguridad
+(`vercel.json` con CSP, `X-Frame-Options`, `X-Content-Type-Options`,
+`Referrer-Policy` y `Permissions-Policy`) y Vercel Analytics. Sobre esto
+último: el código ya está, pero **falta que actives "Web Analytics" en el
+dashboard del proyecto en Vercel** — sin ese paso tuyo no se recolecta nada.
+También se corrigió la sección de Privacidad del README, que decía "no hay
+analítica" y dejó de ser cierto.
 
 **Auditado el 24 de agosto de 2026, sin cambios de código necesarios**:
 contraste de color en modo oscuro. Se midieron las 13 combinaciones de texto
@@ -43,26 +47,15 @@ producir una cifra equivocada o dejar a alguien sin acceso va antes que lo
 cosmético. Se trabaja de arriba hacia abajo, cerrando y verificando cada punto
 antes de pasar al siguiente.
 
-### 1. Sin cabeceras de seguridad
-*Calidad e infraestructura.* Un `vercel.json` con `X-Frame-Options`,
-`X-Content-Type-Options` y una CSP evita que alguien incruste la calculadora en
-un sitio fraudulento y la haga pasar por suya.
-
-### 2. No hay analítica
-*Calidad e infraestructura.* Sin datos no se sabe si entra gente, si agrega CDTs
-o si abandona en el formulario. Vercel Analytics respeta la privacidad, no usa
-cookies y se activa con una línea — coherente con la promesa de privacidad del
-proyecto.
-
-### 3. El favicon sigue siendo el de la plantilla de Vite
+### 1. El favicon sigue siendo el de la plantilla de Vite
 *Calidad e infraestructura.* `public/favicon.svg` es un rayo morado que no dice
 nada del producto. Debería ser coherente con `public/og-image.png`, que sí tiene
 la identidad visual de la app.
 
-### 4. No se puede editar un CDT
+### 2. No se puede editar un CDT
 *Producto.* Corregir una tasa mal digitada obliga a eliminar y volver a crear.
 
-### 5. La pantalla vacía no enseña nada
+### 3. La pantalla vacía no enseña nada
 *Producto.* Al entrar solo hay un formulario en blanco. Un ejemplo precargado con
 un botón de «ver un caso de ejemplo» deja entender la herramienta en tres
 segundos, sin teclear.
@@ -71,7 +64,7 @@ segundos, sin teclear.
 
 ## Hacia dónde puede crecer — nuevas pestañas
 
-**En espera hasta cerrar los cinco puntos anteriores.** Doce propuestas
+**En espera hasta cerrar los tres puntos anteriores.** Doce propuestas
 priorizadas por dolor documentado × facilidad de cálculo × frecuencia. Cada una
 salió de investigar cifras reales del mercado colombiano, no de intuición — por
 eso el orden interno de esta tabla no se tocó al reordenar el resto del backlog.

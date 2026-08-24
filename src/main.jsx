@@ -6,11 +6,14 @@ import '@fontsource-variable/inter'
 import './index.css'
 import App from './App.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
+import { Analytics } from '@vercel/analytics/react'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ErrorBoundary>
       <App />
     </ErrorBoundary>
+    {/* Fuera del ErrorBoundary a propósito: sigue funcionando aunque App falle. */}
+    <Analytics />
   </StrictMode>,
 )
