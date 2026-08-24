@@ -147,12 +147,18 @@ Toda la lógica financiera vive en `OptimizationEngine.js`, aislada de React, pa
 
 ## Privacidad
 
-La aplicación funciona **enteramente en el navegador**. No hay backend y no se envía ningún dato a ningún servidor: los cálculos ocurren en tu dispositivo.
+La aplicación funciona **enteramente en el navegador**. No hay backend: los cálculos ocurren
+en tu dispositivo y nunca se envían a ningún servidor.
 
 Para que no pierdas el trabajo al recargar, el portafolio, los parámetros y el tema se guardan
 en el `localStorage` de tu navegador. Esa información **nunca sale de tu equipo** y puedes
-borrarla en cualquier momento limpiando los datos del sitio. Tampoco hay analítica ni peticiones
-a dominios externos: incluso la tipografía se sirve desde el propio dominio.
+borrarla en cualquier momento limpiando los datos del sitio.
+
+El único tráfico saliente es [Vercel Analytics](https://vercel.com/docs/analytics), que mide
+vistas de página de forma agregada y anónima. Según su propia documentación, no usa cookies, no
+guarda la IP completa ni arma una huella digital para seguirte entre sitios. No sabe qué CDTs
+simulaste, qué parámetros usaste ni ningún dato del formulario — eso sigue sin salir de tu
+navegador. Incluso la tipografía se sirve desde el propio dominio.
 
 ## Actualizar para un año nuevo
 
