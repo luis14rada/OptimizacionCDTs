@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import PortfolioChart from './PortfolioChart';
 
 const SMMLV_2025 = 1423500;
@@ -33,10 +33,12 @@ describe('PortfolioChart', () => {
   it('renderiza una fila por mes con la etiqueta y el monto formateado', () => {
     render(<PortfolioChart flujoMensual={flujoMensual} smmlv={SMMLV_2026} />);
 
-    expect(screen.getByText('ene 26')).toBeInTheDocument();
-    expect(screen.getByText('feb 26')).toBeInTheDocument();
-    expect(screen.getAllByText('$ 500.000')).not.toHaveLength(0);
-    expect(screen.getAllByText('$ 2.000.000')).not.toHaveLength(0);
+    // getAllByText porque el mismo dato aparece dos veces a propósito: una en
+    // el gráfico visual y otra en la tabla accesible (sr-only) que lo acompaña.
+    expect(screen.getAllByText('ene 26').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('feb 26').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('$ 500.000').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('$ 2.000.000').length).toBeGreaterThan(0);
   });
 
   it('un mes que excede el tope se distingue del que no lo excede', () => {
@@ -48,5 +50,41 @@ describe('PortfolioChart', () => {
 
     expect(barraBajoTope.title).toMatch(/sin seguridad social/i);
     expect(barraSobreTope.title).toMatch(/seg\. social/i);
+  });
+
+  it('el gráfico visual queda oculto para lectores de pantalla (aria-hidden)', () => {
+    // Las barras usan `title`, que los lectores de pantalla no anuncian de forma
+    // fiable. Con la tabla accesible como fuente de verdad, el gráfico visual no
+    // debe anunciarse también -- evita datos duplicados o incompletos.
+    const { container } = render(<PortfolioChart flujoMensual={flujoMensual} smmlv={SMMLV_2026} />);
+
+    const barraBajoTope = Array.from(container.querySelectorAll('[title]'))
+      .find(b => b.title.includes('ene 26'));
+
+    expect(barraBajoTope.closest('[aria-hidden="true"]')).not.toBeNull();
+  });
+
+  it('expone una tabla accesible equivalente al gráfico, con el mismo dato que las barras', () => {
+    render(<PortfolioChart flujoMensual={flujoMensual} smmlv={SMMLV_2026} />);
+
+    const tabla = screen.getByRole('table');
+    expect(tabla).toHaveAccessibleName(/flujo de intereses brutos por mes/i);
+    expect(tabla).toHaveTextContent(/tope de 1 smmlv/i);
+    expect(tabla).toHaveTextContent('$ 1.750.905');
+
+    const filas = within(tabla).getAllByRole('row').slice(1); // sin la fila de encabezados
+    expect(filas).toHaveLength(2);
+
+    const filaEnero = within(filas[0]);
+    expect(filaEnero.getByText('ene 26')).toBeInTheDocument();
+    expect(filaEnero.getByText('$ 500.000')).toBeInTheDocument();
+    expect(filaEnero.getByText('No')).toBeInTheDocument();
+    expect(filaEnero.getByText('—')).toBeInTheDocument();
+
+    const filaFebrero = within(filas[1]);
+    expect(filaFebrero.getByText('feb 26')).toBeInTheDocument();
+    expect(filaFebrero.getByText('$ 2.000.000')).toBeInTheDocument();
+    expect(filaFebrero.getByText('Sí')).toBeInTheDocument();
+    expect(filaFebrero.getByText('$ 150.000')).toBeInTheDocument();
   });
 });
