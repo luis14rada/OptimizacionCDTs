@@ -27,8 +27,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Tests
-        run: npm test
+      - name: Tests + cobertura (con umbral mínimo)
+        run: npm run test:coverage
 
       - name: Build de producción
         run: npm run build
