@@ -82,11 +82,15 @@ quedaron todos resueltos — el favicon fue el último.
 
 ## Hacia dónde puede crecer — nuevas pestañas
 
-**Propuestas 1 a 5 resueltas y desplegadas — ver arriba.** El hallazgo
+**Propuestas 1 a 5, 7, 9 y 10 resueltas y desplegadas — ver arriba.** El hallazgo
 de `App.jsx`/`useTheme.js` sin pruebas (sección "En pausa" más abajo) sigue
 pospuesto hasta que Luis decida cerrarlo del todo. Doce propuestas
 priorizadas por dolor documentado × facilidad de cálculo × frecuencia. Cada una
 salió de investigar cifras reales del mercado colombiano, no de intuición.
+
+**Orden de trabajo del 25 de agosto de 2026, a pedido explícito de Luis**: eligió
+resolver la 7, luego la 9 y luego la 10, **saltándose deliberadamente la 6 y la 8** --
+no es que estén descartadas, solo no les tocó el turno todavía.
 
 **Reordenado el 25 de agosto de 2026 a pedido de Luis**: la propuesta "Calculadora
 UGPP con presunción de costos" pasó del puesto 3 al final de la lista y queda **fuera
@@ -108,16 +112,16 @@ adultos tiene cuenta de ahorros, contra el 1–2% que invierte en bolsa.
 | 4 | 4×1000: cuánto pagas y cómo dejar de pagarlo **(resuelto)** | $240.000/año evitables con un solo trámite |
 | 5 | Escalera de CDTs y cobertura Fogafín **(resuelto)** | El seguro cubre $50 M por entidad; nadie ayuda a repartir |
 | 6 | Qué hacer con la prima y las cesantías | 79% se arrepiente de cómo gastó su prima |
-| 7 | El costo real de tu deuda | Usura al 29,66%; gota a gota al 382% |
+| 7 | El costo real de tu deuda **(resuelto)** | Usura al 29,66%; gota a gota al 382% |
 | 8 | Detector de pirámides | 262.000 víctimas, $4,2 billones perdidos |
-| 9 | Costo total de tener una cuenta | Cuota de manejo de $0 a $44.030/mes |
-| 10 | Fondo de emergencia | Solo 1 de cada 5 cubre un imprevisto |
+| 9 | Costo total de tener una cuenta **(resuelto)** | Cuota de manejo de $0 a $44.030/mes |
+| 10 | Fondo de emergencia **(resuelto)** | Solo 1 de cada 5 cubre un imprevisto |
 | 11 | Herencias y ganancia ocasional | Exenciones mal aplicadas de $85 M a $680 M |
 | 12 | Calculadora UGPP con presunción de costos **(en pausa, no desarrollar salvo pedido explícito)** | 8,3 M de trabajadores por cuenta propia; deducción de 27,5%–82,3% que casi nadie usa |
 
-**Propuestas 1 a 5 ya resueltas** (ver arriba; 3, 4 y 5 se resolvieron en bundle,
-ver la nota de investigación legal más abajo). Al retomar esta sección, la
-propuesta 6 ("Qué hacer con la prima y las cesantías") sigue el orden.
+**Propuestas 1 a 5, 7, 9 y 10 ya resueltas** (ver arriba; cada bloque se resolvió
+en bundle, ver las notas de investigación legal más abajo). Quedan pendientes 6, 8,
+11 y 12 (esta última en pausa) -- ninguna tiene prioridad fija hasta que Luis la pida.
 
 **Nota de investigación de la propuesta 1, por si sirve para las siguientes:** de
 las tasas de ahorro investigadas, solo quedaron en `src/tasasAhorro.js` las 10
@@ -154,6 +158,32 @@ cada pestaña cita su norma exacta y usa parámetros configurables (patrón
   3 años basada en inflación -- no se encontró evidencia de un cambio de monto desde
   entonces (fuentes verificadas hasta junio de 2026), pero como la política de
   revisión existe, vale la pena reconfirmar el monto cada cierto tiempo.
+
+**Nota de investigación legal de las propuestas 7, 9 y 10 (25 de agosto de 2026):**
+
+- **El costo real de tu deuda**: la tasa de usura es 1,5x el Interés Bancario
+  Corriente (IBC, art. 884 Código de Comercio) -- con el IBC de agosto de 2026
+  (19,77%, Resolución 1139 de 2026 de la Superfinanciera) da 29,65% E.A., coherente
+  con el 29,66% que ya citaba esta tabla. Cobrar por encima es el delito de usura
+  (art. 305 Código Penal, pena de 32 a 90 meses); si TRIPLICA el IBC, la pena
+  aumenta. **A diferencia del resto de constantes legales del proyecto, el IBC
+  cambia todos los meses, no una vez al año** -- por eso la pestaña deja la fecha
+  de corte bien visible y el valor totalmente editable. El 382,2% del "gota a
+  gota" es un estimado de mercado de ANIF y Colombia Fintech (La República, 23 de
+  enero de 2025), no una tasa oficial -- es más viejo que el resto de los datos de
+  este bloque, se trata como orden de magnitud.
+- **Costo total de tener una cuenta**: cuotas de manejo de la actualización
+  trimestral de productos de depósito de la Superfinanciera, corte 1 de julio de
+  2026 (vía La República). **Es una referencia parcial, no exhaustiva**: el reporte
+  cubre 25 bancos, pero las notas de prensa disponibles solo desglosaron las 9
+  entidades con cobro en cuenta y las 7 con cobro en tarjeta débito, no las que
+  cobran $0 -- si tu banco no aparece en la tabla, puede que no cobre nada, pero no
+  es un dato confirmado.
+- **Fondo de emergencia**: a diferencia de las otras dos, **no hay una norma
+  colombiana** que fije cuánto ahorrar -- los 3 a 6 meses de gastos son una
+  práctica de planeación financiera estándar, no una ley. La estadística de que
+  solo 1 de cada 5 colombianos podría cubrir un imprevisto es de Banco W (15 de
+  julio de 2026), coherente con el dato que ya citaba esta tabla.
 
 ### Límites que aplican a todas
 
