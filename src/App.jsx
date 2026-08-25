@@ -6,17 +6,30 @@ import ThemeToggle from './components/ThemeToggle';
 import useTheme from './hooks/useTheme';
 
 // Primera de varias pestañas planeadas (ver BACKLOG.md): cada una es una
-// herramienta aparte dentro de la misma app, no una vista distinta con su
-// propio título -- el título general no cambia entre pestañas.
+// herramienta aparte dentro de la misma app. El título y la bajada del
+// encabezado cambian según la pestaña activa -- "etiqueta" es el texto corto
+// del botón de la pestaña; "titulo"/"descripcion" son el encabezado completo
+// que se muestra arriba cuando esa pestaña está activa.
 const TABS = [
-  { id: 'cdts', etiqueta: 'Optimizador de CDTs' },
-  { id: 'ahorros', etiqueta: 'Cuenta de ahorros' }
+  {
+    id: 'cdts',
+    etiqueta: 'Optimizador de CDTs',
+    titulo: 'Optimizador de CDTs',
+    descripcion: 'Calcula la rentabilidad real de tus inversiones en Colombia y descubre el tope máximo para evitar legalmente aportes a seguridad social como rentista de capital.'
+  },
+  {
+    id: 'ahorros',
+    etiqueta: 'Cuenta de ahorros',
+    titulo: '¿Cuánto te cuesta tu cuenta de ahorros?',
+    descripcion: 'Compará la tasa de tu cuenta contra otras del mercado colombiano y contra la inflación, para saber si tu plata gana o pierde poder adquisitivo real.'
+  }
 ];
 
 function App() {
   const { theme, toggleTheme } = useTheme();
   const [disclaimerAceptado, setDisclaimerAceptado] = useState(false);
   const [tabActiva, setTabActiva] = useState('cdts');
+  const tabInfo = TABS.find(tab => tab.id === tabActiva) || TABS[0];
 
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
@@ -30,11 +43,14 @@ function App() {
 
         {/* Header */}
         <header className="text-center space-y-4">
+          <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-primary-600 dark:text-primary-400">
+            Optimizador Financiero
+          </p>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-indigo-600 dark:from-primary-400 dark:to-indigo-400 tracking-tight">
-            Optimizador de CDTs
+            {tabInfo.titulo}
           </h1>
           <p className="text-base sm:text-lg md:text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto">
-            Calcula la rentabilidad real de tus inversiones en Colombia y descubre el tope máximo para evitar legalmente aportes a seguridad social como rentista de capital.
+            {tabInfo.descripcion}
           </p>
 
           <div role="tablist" aria-label="Herramientas" className="inline-flex flex-wrap justify-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/60">
