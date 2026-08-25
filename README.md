@@ -45,6 +45,28 @@ ajustables desde la interfaz, porque cambian cada año.
 | Situación laboral | Rentista de capital | Determina si aplican salud, pensión y el piso de 1 SMMLV |
 | Componente inflacionario | Desactivado | Su porcentaje se fija por decreto **después** de terminado el año |
 | Tope del IBC | 25 SMMLV | Límite legal superior del ingreso base de cotización |
+| Base del umbral de 1 SMMLV | Ingreso neto | Sobre qué se compara el umbral que activa la obligación. Ver la sección siguiente |
+
+### Sobre qué ingreso se mide el umbral de 1 SMMLV
+
+El [artículo 89 de la Ley 2277 de 2022](http://secretariasenado.gov.co/senado/basedoc/ley_2277_2022_pr002.html)
+obliga a cotizar a quien tenga «ingresos **netos** mensuales iguales o superiores a un (1) salario
+mínimo legal mensual vigente» — netos, es decir después de restar los costos (los presuntos del
+27,5 % o los reales del art. 107 del Estatuto Tributario). Lo confirma el
+[ABC de rentistas de capital de la UGPP](https://www.ugpp.gov.co/abc_rentistas_capital/).
+
+La diferencia es material: con el SMMLV de 2026 ($1.750.905) y el 27,5 % de costos presuntos, medir
+sobre el neto mueve el umbral de **$1.750.905 a un bruto equivalente de $2.415.041**. Medirlo sobre
+el bruto activa la obligación antes de tiempo y, en consecuencia, calcula un tope máximo de
+inversión más bajo del que la ley permite.
+
+Se dejó **configurable** en vez de imponerlo: es una interpretación de norma, no una constante.
+Quien prefiera el criterio conservador —o cuyo contador lo lea distinto— puede cambiarlo a bruto
+desde el panel «Parámetros de cálculo».
+
+> Este cálculo tiene dos pasos que es fácil confundir. El umbral (**¿estoy obligado?**) se compara
+> contra el ingreso neto; el IBC (**¿sobre cuánto aporto?**) es ese mismo neto multiplicado por 40 %,
+> con piso de 1 SMMLV y techo de 25. Los costos se restan en los dos, no solo en el segundo.
 
 ### Sobre la situación laboral
 

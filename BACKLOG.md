@@ -257,6 +257,18 @@ quedaron sin confirmar con fuente oficial:
 - El modelo de situación laboral (quién aporta salud, quién pensión, y cuándo deja
   de aplicar el piso de 1 SMMLV) es una simplificación. Ver la tabla en el README.
 
+**Uno de estos supuestos ya se corrigió (25 de agosto de 2026).** Al investigar
+contenido para el nicho de CDT + seguridad social apareció que el motor comparaba
+el ingreso **bruto** contra 1 SMMLV, cuando el art. 89 de la Ley 2277 de 2022 mide
+ese umbral sobre el ingreso **neto** (después de costos), como confirma el ABC de
+rentistas de capital de la UGPP. El error activaba la obligación antes de tiempo:
+en la franja de $1.750.905 a $2.415.041 de interés bruto mensual cobraba $499.008
+que no correspondían, y dejaba el tope máximo de inversión un 38% por debajo de lo
+que la ley permite ($15.917.317 en vez de $21.954.920 al 11% E.A.). Se corrigió y
+se dejó **configurable** (neto por defecto, bruto disponible), porque es una
+interpretación de norma y no una constante. **Sigue valiendo la pena que un contador
+revise esta y las demás.**
+
 ### Sin actualización automática de dependencias
 Dependabot o Renovate abren PRs cuando salen parches de seguridad. Con el CI ya
 montado, cada PR se valida solo.

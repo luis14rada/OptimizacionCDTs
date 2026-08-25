@@ -9,6 +9,7 @@ import {
   recalcularPortafolio,
   sumarMeses
 } from './OptimizationEngine';
+import { PARAMETROS_POR_DEFECTO } from './parametros';
 
 const cdtBase = (overrides = {}) => ({
   id: Math.random(),
@@ -40,10 +41,14 @@ describe('calcularSeguridadSocial', () => {
     expect(resultado).toEqual({ ibc: 0, salud: 0, pension: 0, total: 0, excedeTope: false });
   });
 
-  it('activa seguridad social justo en el límite de 1 SMMLV (aplica el piso del IBC)', () => {
-    const resultado = calcularSeguridadSocial(SMMLV_2026);
+  it('activa seguridad social al cruzar el umbral y aplica el piso del IBC', () => {
+    // El umbral se mide sobre el ingreso neto (art. 89 Ley 2277 de 2022), así
+    // que en bruto equivale a SMMLV / 0,725 = $2.415.041. Un peso por encima
+    // ya obliga. El IBC calculado ahí ($700.362) queda por debajo del SMMLV,
+    // así que se aplica el piso de 1 SMMLV.
+    const brutoQueCruzaElUmbral = SMMLV_2026 / (1 - PARAMETROS_POR_DEFECTO.costosPresuntos) + 1;
+    const resultado = calcularSeguridadSocial(brutoQueCruzaElUmbral);
     expect(resultado.excedeTope).toBe(true);
-    // El IBC calculado (SMMLV * 0.725 * 0.40) es menor al SMMLV, así que se usa el piso de 1 SMMLV.
     expect(resultado.ibc).toBeCloseTo(SMMLV_2026, 6);
     expect(resultado.salud).toBeCloseTo(SMMLV_2026 * 0.125, 6);
     expect(resultado.pension).toBeCloseTo(SMMLV_2026 * 0.16, 6);
@@ -224,8 +229,11 @@ describe('Regresión · el IBC respeta el techo legal de 25 SMMLV', () => {
     expect(resultado.total).toBeLessThan(13000000);
   });
 
-  it('sigue respetando el piso de 1 SMMLV en ingresos bajos', () => {
-    const resultado = calcularSeguridadSocial(SMMLV_2026);
+  it('sigue respetando el piso de 1 SMMLV apenas se cruza el umbral', () => {
+    // Apenas pasado el umbral neto, el IBC calculado es mucho menor al SMMLV,
+    // así que manda el piso.
+    const brutoQueCruzaElUmbral = SMMLV_2026 / (1 - PARAMETROS_POR_DEFECTO.costosPresuntos) + 1;
+    const resultado = calcularSeguridadSocial(brutoQueCruzaElUmbral);
     expect(resultado.ibc).toBeCloseTo(SMMLV_2026, 2);
   });
 
@@ -306,5 +314,49 @@ describe('Regresión · las fechas no se desbordan a fin de mes', () => {
     })]);
     // El pago debe caer en febrero de 2026, no en marzo.
     expect(resultado.totales.flujoMensual[0].mesKey).toBe('2026-02');
+  });
+});
+
+describe('Regresión · el umbral de obligación se mide sobre el ingreso NETO', () => {
+  // El art. 89 de la Ley 2277 de 2022 obliga a cotizar a quien tenga
+  // "ingresos netos mensuales iguales o superiores a un (1) SMMLV" -- netos,
+  // es decir después de restar los costos. El motor comparaba el ingreso
+  // BRUTO, así que activaba la obligación antes de tiempo y, en consecuencia,
+  // calculaba un tope máximo de inversión más bajo del que la ley permite.
+  // SMMLV 2026 = $1.750.905; con 27,5% de costos presuntos el umbral real
+  // equivale a un bruto de $2.415.041.
+  const SMMLV = PARAMETROS_POR_DEFECTO.smmlv;
+
+  it('no obliga a aportar cuando el neto queda bajo 1 SMMLV, aunque el bruto lo supere', () => {
+    // Bruto $2.000.000 -> neto $1.450.000, por debajo del SMMLV.
+    const r = calcularSeguridadSocial(2000000, PARAMETROS_POR_DEFECTO);
+    expect(r.total).toBe(0);
+    expect(r.ibc).toBe(0);
+  });
+
+  it('sí obliga a aportar cuando el neto alcanza 1 SMMLV', () => {
+    // Bruto $2.500.000 -> neto $1.812.500, por encima del SMMLV.
+    const r = calcularSeguridadSocial(2500000, PARAMETROS_POR_DEFECTO);
+    expect(r.total).toBeGreaterThan(0);
+  });
+
+  it('justo en el bruto equivalente al umbral ($2.415.041) ya hay obligación', () => {
+    const brutoEquivalente = SMMLV / (1 - PARAMETROS_POR_DEFECTO.costosPresuntos);
+    expect(calcularSeguridadSocial(brutoEquivalente + 1, PARAMETROS_POR_DEFECTO).total).toBeGreaterThan(0);
+    expect(calcularSeguridadSocial(brutoEquivalente - 1000, PARAMETROS_POR_DEFECTO).total).toBe(0);
+  });
+
+  it('quien prefiera el criterio conservador puede medir el umbral sobre el bruto', () => {
+    const conservador = { ...PARAMETROS_POR_DEFECTO, umbralSobreIngresoNeto: false };
+    expect(calcularSeguridadSocial(2000000, conservador).total).toBeGreaterThan(0);
+  });
+
+  it('el tope máximo de inversión es mayor con el umbral neto que con el bruto', () => {
+    const conNeto = calcularInversionMaximaOptima(0.11, 'mensual', 12, PARAMETROS_POR_DEFECTO);
+    const conBruto = calcularInversionMaximaOptima(0.11, 'mensual', 12, {
+      ...PARAMETROS_POR_DEFECTO,
+      umbralSobreIngresoNeto: false
+    });
+    expect(conNeto).toBeGreaterThan(conBruto);
   });
 });

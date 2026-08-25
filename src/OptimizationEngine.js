@@ -49,13 +49,18 @@ export const calcularSeguridadSocial = (ingresoBrutoMensual, parametros = PARAME
   const sinAporte = { ibc: 0, salud: 0, pension: 0, total: 0, excedeTope: false };
 
   // Quien no cotiza por ningún otro ingreso solo queda obligado cuando el
-  // ingreso del mes alcanza 1 SMMLV.
-  if (situacion.aplicaPiso && ingresoBrutoMensual < p.smmlv) {
+  // ingreso del mes alcanza 1 SMMLV. El art. 89 de la Ley 2277 de 2022 mide
+  // ese umbral sobre el ingreso NETO (después de costos); `umbralSobreIngresoNeto`
+  // permite volver al criterio conservador sobre el bruto. Ver FUENTE_UMBRAL.
+  const ingresoNetoMensual = ingresoBrutoMensual - (ingresoBrutoMensual * p.costosPresuntos);
+  const ingresoParaUmbral = p.umbralSobreIngresoNeto ? ingresoNetoMensual : ingresoBrutoMensual;
+
+  if (situacion.aplicaPiso && ingresoParaUmbral < p.smmlv) {
     return sinAporte;
   }
   if (ingresoBrutoMensual <= 0) return sinAporte;
 
-  const ibcDelIngreso = (ingresoBrutoMensual - (ingresoBrutoMensual * p.costosPresuntos)) * 0.40;
+  const ibcDelIngreso = ingresoNetoMensual * 0.40;
   const techo = p.smmlv * p.topeIbcSmmlv;
 
   let ibcFinal;
@@ -96,7 +101,14 @@ export const calcularInversionMaximaOptima = (tasaEA, frecuenciaPago, plazoMeses
     tasaPeriodoPago = calcularTasaPeriodica(tasaEA, periodosAlAno);
   }
 
-  return Math.floor(p.smmlv / tasaPeriodoPago) - 1;
+  // El tope busca que el interés de cada periodo no active la obligación de
+  // cotizar. Como el umbral se mide sobre el ingreso neto (art. 89 Ley 2277
+  // de 2022), el interés bruto puede llegar más alto antes de cruzarlo.
+  const umbralEnBruto = p.umbralSobreIngresoNeto
+    ? p.smmlv / (1 - p.costosPresuntos)
+    : p.smmlv;
+
+  return Math.floor(umbralEnBruto / tasaPeriodoPago) - 1;
 };
 
 /**
