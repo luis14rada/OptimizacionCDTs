@@ -44,7 +44,7 @@ describe('App', () => {
     // El título y la bajada pasan a describir la pestaña activa; el texto
     // del Optimizador de CDTs desaparece (no se borró, solo dejó de mostrarse).
     expect(screen.getByRole('heading', { level: 1, name: /cuánto te cuesta tu cuenta de ahorros/i })).toBeInTheDocument();
-    expect(screen.getByText(/compará la tasa de tu cuenta contra otras del mercado colombiano/i)).toBeInTheDocument();
+    expect(screen.getByText(/compara la tasa de tu cuenta contra otras del mercado colombiano/i)).toBeInTheDocument();
     expect(screen.queryByText(/descubre el tope máximo para evitar legalmente aportes a seguridad social/i)).not.toBeInTheDocument();
   });
 
@@ -90,7 +90,7 @@ describe('App', () => {
 
     await user.click(screen.getByRole('tab', { name: /4×1000/i }));
 
-    expect(screen.getByRole('heading', { level: 1, name: /4×1000: cuánto pagás y cómo dejar de pagarlo/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: /4×1000: cuánto pagas y cómo dejar de pagarlo/i })).toBeInTheDocument();
   });
 
   it('cambiar a la pestaña "Escalera Fogafín" muestra esa herramienta', async () => {

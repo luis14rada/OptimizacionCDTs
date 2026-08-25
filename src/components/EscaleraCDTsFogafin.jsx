@@ -41,8 +41,8 @@ export default function EscaleraCDTsFogafin() {
           <h2 className="text-2xl font-bold mb-2 text-primary-900 dark:text-primary-100">Escalera de CDTs y cobertura Fogafín</h2>
           <p className="text-sm text-slate-600 dark:text-slate-300 max-w-3xl">
             El seguro de depósitos cubre hasta {formatCurrency(coberturaMaxima)} por persona, <strong>por entidad</strong> --
-            todo lo que tengas en el mismo banco (CDTs, ahorros, corriente) se suma para ese único tope. Listá dónde
-            tenés tu plata para ver si algo quedó sin cobertura.
+            todo lo que tengas en el mismo banco (CDTs, ahorros, corriente) se suma para ese único tope. Lista dónde
+            tienes tu plata para ver si algo quedó sin cobertura.
           </p>
         </div>
 
@@ -128,7 +128,7 @@ export default function EscaleraCDTsFogafin() {
               <span className="text-xl" aria-hidden="true">⚠️</span>
               <div>
                 <p className="text-orange-900 dark:text-orange-200 font-semibold text-lg">
-                  Tenés {formatCurrency(resultado.totalDescubierto)} sin cobertura de Fogafín
+                  Tienes {formatCurrency(resultado.totalDescubierto)} sin cobertura de Fogafín
                 </p>
                 <p className="text-sm text-orange-800 dark:text-orange-300 mt-1">
                   Con {formatCurrency(resultado.totalInvertido)} en total, necesitarías repartir tu plata en al menos{' '}
@@ -181,7 +181,7 @@ export default function EscaleraCDTsFogafin() {
       <section className="glass-card p-6 md:p-8">
         <p className="text-xs text-slate-500 dark:text-slate-400">
           Fuente: {FUENTE_FOGAFIN} Esta herramienta informa y compara; nunca sugiere una entidad puntual, solo cuántas
-          hacen falta para quedar cubierto. Confirmá siempre las condiciones vigentes con Fogafín o tu entidad.
+          hacen falta para quedar cubierto. Confirma siempre las condiciones vigentes con Fogafín o tu entidad.
         </p>
       </section>
     </div>

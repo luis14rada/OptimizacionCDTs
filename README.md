@@ -93,7 +93,7 @@ Quien no encuentre su entidad puede elegir "Otra entidad" e ingresar su tasa rea
 Tercera herramienta de la app. La tasa que anuncia cualquier producto -- un CDT, un fondo,
 una cuenta -- no es lo que realmente te queda. Primero se descuenta la retención en la
 fuente, y lo que sobra se lo come la inflación. Esta pestaña no está atada a un producto ni
-a una entidad: ingresás la tasa nominal E.A. que quieras comparar y la app muestra cada
+a una entidad: ingresas la tasa nominal E.A. que quieras comparar y la app muestra cada
 eslabón de la cadena:
 
 **Tasa nominal E.A. → (– retención en la fuente) → tasa neta → (– inflación) → retorno real**

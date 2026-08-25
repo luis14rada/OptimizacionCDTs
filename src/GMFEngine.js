@@ -1,30 +1,49 @@
 /**
- * Motor del Gravamen a los Movimientos Financieros (GMF, "4x1000"). Solo se
- * grava el excedente sobre el tope exento mensual, no el mes completo una
- * vez superado -- así lo confirma la exención del art. 879 numeral 1 ET.
+ * Motor del Gravamen a los Movimientos Financieros (GMF, "4x1000").
+ *
+ * Modelo por transacción, no por promedio mensual: no se puede asegurar que
+ * una persona vaya a repetir el mismo movimiento todos los meses, así que el
+ * cálculo principal es el costo de UNA transacción puntual. La proyección
+ * mensual/anual es secundaria y solo aplica si la persona confirma que va a
+ * repetir ese mismo movimiento de forma recurrente.
+ *
+ * Para una cuenta marcada como exenta, el cálculo asume que la transacción
+ * ingresada es el único movimiento del mes en esa cuenta -- si ya hubo otros
+ * retiros antes en el mismo mes, el resultado real puede variar, porque la
+ * exención de 350 UVT se acumula mes a mes (art. 879 numeral 1 ET), no
+ * transacción por transacción.
  */
 
-/** GMF de un mes, con o sin la cuenta marcada como exenta. */
-export const calcularGMFMensual = ({ movimientoMensual, cuentaMarcada, tarifa, topeExentoUvt, uvt }) => {
+/** GMF de una transacción puntual, con o sin la cuenta marcada como exenta. */
+export const calcularGMFTransaccion = ({ montoTransaccion, cuentaMarcada, tarifa, topeExentoUvt, uvt }) => {
   const topeExento = topeExentoUvt * uvt;
-  const baseGravada = cuentaMarcada ? Math.max(0, movimientoMensual - topeExento) : movimientoMensual;
+  const baseGravada = cuentaMarcada ? Math.max(0, montoTransaccion - topeExento) : montoTransaccion;
   return {
     topeExento,
     baseGravada,
-    gmfMensual: baseGravada * tarifa
+    gmfTransaccion: baseGravada * tarifa
   };
 };
 
-/** Compara el año con y sin la cuenta marcada, y el ahorro de hacerlo. */
-export const calcularAhorroPorMarcarCuenta = ({ movimientoMensual, tarifa, topeExentoUvt, uvt }) => {
-  const sinMarcar = calcularGMFMensual({ movimientoMensual, cuentaMarcada: false, tarifa, topeExentoUvt, uvt });
-  const marcada = calcularGMFMensual({ movimientoMensual, cuentaMarcada: true, tarifa, topeExentoUvt, uvt });
+/**
+ * Compara el GMF de una transacción con y sin la cuenta marcada, con el
+ * ahorro puntual. Incluye además la proyección mensual/anual *si* ese mismo
+ * movimiento se repitiera todos los meses -- un escenario secundario, no el
+ * resultado principal.
+ */
+export const calcularAhorroPorMarcarCuenta = ({ montoTransaccion, tarifa, topeExentoUvt, uvt }) => {
+  const sinMarcar = calcularGMFTransaccion({ montoTransaccion, cuentaMarcada: false, tarifa, topeExentoUvt, uvt });
+  const marcada = calcularGMFTransaccion({ montoTransaccion, cuentaMarcada: true, tarifa, topeExentoUvt, uvt });
 
-  const gmfAnualSinMarcar = sinMarcar.gmfMensual * 12;
-  const gmfAnualMarcada = marcada.gmfMensual * 12;
+  const ahorroTransaccion = sinMarcar.gmfTransaccion - marcada.gmfTransaccion;
+  const gmfAnualSinMarcar = sinMarcar.gmfTransaccion * 12;
+  const gmfAnualMarcada = marcada.gmfTransaccion * 12;
 
   return {
     topeExento: marcada.topeExento,
+    gmfTransaccionSinMarcar: sinMarcar.gmfTransaccion,
+    gmfTransaccionMarcada: marcada.gmfTransaccion,
+    ahorroTransaccion,
     gmfAnualSinMarcar,
     gmfAnualMarcada,
     ahorroAnual: gmfAnualSinMarcar - gmfAnualMarcada

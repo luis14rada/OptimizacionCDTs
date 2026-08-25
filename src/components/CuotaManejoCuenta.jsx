@@ -23,8 +23,8 @@ export default function CuotaManejoCuenta() {
           <h2 className="text-2xl font-bold mb-2 text-primary-900 dark:text-primary-100">Costo total de tener una cuenta</h2>
           <p className="text-sm text-slate-600 dark:text-slate-300 max-w-3xl">
             Entre cuota de manejo de la cuenta y de la tarjeta débito, algunos bancos cobran hasta{' '}
-            {formatCurrency(44030 + 24150)} al mes por tener tu plata guardada -- otros no cobran nada. Ingresá lo que te
-            cobra tu banco (revisá tu extracto o el tarifario) para ver cuánto es al año.
+            {formatCurrency(44030 + 24150)} al mes por tener tu plata guardada -- otros no cobran nada. Ingresa lo que te
+            cobra tu banco (revisa tu extracto o el tarifario) para ver cuánto es al año.
           </p>
         </div>
 
@@ -77,7 +77,7 @@ export default function CuotaManejoCuenta() {
             <div className="p-4 bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded-xl flex gap-3 items-start">
               <span className="text-xl" aria-hidden="true">⚠️</span>
               <p className="text-sm text-orange-800 dark:text-orange-300">
-                Pagás <strong>{formatCurrency(costoAnual)}</strong> al año solo por tener la cuenta abierta. Varias entidades
+                Pagas <strong>{formatCurrency(costoAnual)}</strong> al año solo por tener la cuenta abierta. Varias entidades
                 en el mercado colombiano no cobran nada por esto -- vale la pena comparar antes de asumir que es normal.
               </p>
             </div>
@@ -126,7 +126,7 @@ export default function CuotaManejoCuenta() {
         <p className="text-xs text-slate-500 dark:text-slate-400">
           Fuente: <a href={FUENTE_CUOTAS_URL} target="_blank" rel="noreferrer" className="underline">{FUENTE_CUOTAS}</a>,
           corte {formatFecha(FECHA_CORTE_CUOTAS)}. Esta tabla informa y compara; no es una recomendación de dónde abrir tu
-          cuenta -- validá siempre la tarifa vigente directamente con la entidad.
+          cuenta -- valida siempre la tarifa vigente directamente con la entidad.
         </p>
       </section>
     </div>

@@ -25,9 +25,9 @@ describe('FondoEmergencia', () => {
     render(<FondoEmergencia />);
 
     await user.type(screen.getByLabelText(/gastos fijos mensuales/i), '1000000');
-    await user.type(screen.getByLabelText(/ahorro que ya tenés/i), '5000000');
+    await user.type(screen.getByLabelText(/ahorro que ya tienes/i), '5000000');
 
-    expect(await screen.findByText(/ya tenés cubierta tu meta/i)).toBeInTheDocument();
+    expect(await screen.findByText(/ya tienes cubierta tu meta/i)).toBeInTheDocument();
   });
 
   it('cambiar los meses de cobertura recalcula la meta', async () => {

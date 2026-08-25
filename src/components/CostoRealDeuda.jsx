@@ -73,7 +73,7 @@ export default function CostoRealDeuda() {
           <h2 className="text-2xl font-bold mb-2 text-primary-900 dark:text-primary-100">El costo real de tu deuda</h2>
           <p className="text-sm text-slate-600 dark:text-slate-300 max-w-3xl">
             La tasa de usura en Colombia es {formatPorcentaje(supuestos.ibc * supuestos.multiplicadorUsura)} E.A. (corte{' '}
-            {formatFecha(FECHA_CORTE_IBC)}) -- cobrar más que eso es delito. Ingresá la tasa que te cobran (mensual o
+            {formatFecha(FECHA_CORTE_IBC)}) -- cobrar más que eso es delito. Ingresa la tasa que te cobran (mensual o
             anual) para saber si está dentro de la ley.
           </p>
         </div>
@@ -139,7 +139,7 @@ export default function CostoRealDeuda() {
                 Te cobran {formatPorcentaje(tasaEA)} E.A. sobre {formatCurrency(montoNum)}. El tope legal es{' '}
                 {formatPorcentaje(resultado.tasaUsura)} E.A.
                 {resultado.sobrecostoAnual > 0 && (
-                  <> Al año, pagás <strong>{formatCurrency(resultado.sobrecostoAnual)}</strong> más de lo que permite la ley.</>
+                  <> Al año, pagas <strong>{formatCurrency(resultado.sobrecostoAnual)}</strong> más de lo que permite la ley.</>
                 )}
               </p>
             </div>
@@ -147,7 +147,7 @@ export default function CostoRealDeuda() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-              <p className="text-slate-500 dark:text-slate-400">Interés que pagás al año</p>
+              <p className="text-slate-500 dark:text-slate-400">Interés que pagas al año</p>
               <p className="text-lg font-bold text-slate-800 dark:text-slate-100">{formatCurrency(resultado.interesAnualPropio)}</p>
             </div>
             <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50">
@@ -164,7 +164,7 @@ export default function CostoRealDeuda() {
           {resultado.clasificacion !== 'legal' && (
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Cobrar por encima de la tasa de usura es el delito de usura (art. 305 del Código Penal). Esto es información,
-              no asesoría legal -- si creés que te están cobrando de forma ilegal, consultá con un abogado o denunciá ante
+              no asesoría legal -- si crees que te están cobrando de forma ilegal, consulta con un abogado o denuncia ante
               la Fiscalía.
             </p>
           )}
@@ -190,7 +190,7 @@ export default function CostoRealDeuda() {
           <div id="ajustar-usura" className="px-5 md:px-8 pb-6 space-y-4 border-t border-slate-200 dark:border-slate-700 pt-6">
             <p className="text-xs text-slate-500 dark:text-slate-400">
               El IBC lo certifica la Superfinanciera <strong>todos los meses</strong> -- si pasó más de un mes desde la
-              fecha de corte de arriba, buscá el valor vigente y ajustalo acá.
+              fecha de corte de arriba, busca el valor vigente y ajústalo acá.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Campo etiqueta="Interés Bancario Corriente (IBC)" ayuda="Como decimal: 0,1977 = 19,77%" htmlFor="ibc-usura">
