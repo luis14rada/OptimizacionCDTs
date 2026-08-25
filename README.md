@@ -1,9 +1,10 @@
-# Optimizador de CDTs
+# Optimizador Financiero
 
-Simulador web con dos herramientas para entender tu plata en Colombia:
+Simulador web con tres herramientas para entender tu plata en Colombia:
 
 1. **Optimizador de CDTs** — calcula la **rentabilidad real** de inversiones en CDTs, y encuentra el tope máximo de inversión que evita legalmente la obligación de cotizar a seguridad social como rentista de capital.
 2. **[¿Cuánto te cuesta tu cuenta de ahorros?](#cuánto-te-cuesta-tu-cuenta-de-ahorros)** — compara la tasa de tu cuenta de ahorros contra otras del mercado y contra la inflación.
+3. **[Rentabilidad real: la cadena completa](#rentabilidad-real-la-cadena-completa)** — de la tasa nominal de cualquier producto hasta lo que realmente queda después de retención en la fuente e inflación.
 
 > [!WARNING]
 > **Esta herramienta es un simulador educativo e informativo.** No constituye asesoría contable, tributaria, financiera ni legal, y **no reemplaza a un contador público o asesor profesional**. Los cálculos se basan en supuestos generales que pueden no aplicar a tu situación particular, cambiar con el tiempo, o interpretarse de forma distinta según cada caso. Valida siempre tu caso específico con un profesional autorizado. El uso es bajo tu propio riesgo y no se asume responsabilidad por errores, omisiones ni por decisiones tomadas con base en sus resultados.
@@ -87,6 +88,26 @@ Quien no encuentre su entidad puede elegir "Otra entidad" e ingresar su tasa rea
 > como "la mejor": muestra el ordenamiento y deja que el número hable. No es una
 > recomendación de dónde poner tu plata.
 
+## Rentabilidad real: la cadena completa
+
+Tercera herramienta de la app. La tasa que anuncia cualquier producto -- un CDT, un fondo,
+una cuenta -- no es lo que realmente te queda. Primero se descuenta la retención en la
+fuente, y lo que sobra se lo come la inflación. Esta pestaña no está atada a un producto ni
+a una entidad: ingresás la tasa nominal E.A. que quieras comparar y la app muestra cada
+eslabón de la cadena:
+
+**Tasa nominal E.A. → (– retención en la fuente) → tasa neta → (– inflación) → retorno real**
+
+No agrega datos nuevos: reutiliza los mismos ya sourceados para el resto de la app --
+`OPCIONES_RETENCION` de `src/parametros.js` (4% declarante / 7% no declarante) y
+`INFLACION_ANUAL_REFERENCIA` de `src/tasasAhorro.js`. El motor (`RentabilidadRealEngine.js`)
+reutiliza a su vez `calcularRetornoReal` de `AhorrosEngine.js` en vez de duplicar la ecuación
+de Fisher.
+
+Con los valores por defecto (10% nominal, retención del 4%), solo sobrevive el **33,67% de
+la ganancia en términos reales** -- ilustra por qué conviene mirar la cadena completa, no
+solo la tasa que anuncia el producto.
+
 ## Stack
 
 React 19 · Vite 8 · Tailwind CSS 4 · jsPDF · Vitest + React Testing Library · Oxlint
@@ -130,7 +151,9 @@ El proyecto usa [Vitest](https://vitest.dev/) y [React Testing Library](https://
 - `src/components/ComparadorEscenarios.test.jsx` — la comparación A/B.
 - `src/AhorrosEngine.test.js` — el cálculo de retorno real (ecuación de Fisher) de la pestaña de cuenta de ahorros.
 - `src/components/CostoCuentaAhorros.test.jsx` — el comparador de cuentas de ahorro: autocompletar tasas, "Otra entidad", y el resultado con inflación.
-- `src/App.test.jsx` — cambiar de pestaña muestra la herramienta correcta y oculta la otra.
+- `src/RentabilidadRealEngine.test.js` — la cadena tasa nominal → retención → retorno real, incluido el caso de tasa nominal 0% (sin dividir por cero).
+- `src/components/CadenaRentabilidadReal.test.jsx` — el formulario de rentabilidad real: cambio de retención, aviso de pérdida de poder adquisitivo, y el mensaje de "menos de la mitad" cuando aplica.
+- `src/App.test.jsx` — cambiar de pestaña muestra la herramienta correcta y oculta las otras, y que el encabezado (título y bajada) cambie según la pestaña activa.
 
 Hay un bloque de **pruebas de regresión** en `OptimizationEngine.test.js` que cubre tres errores
 de cálculo detectados en una auditoría: el techo de 25 SMMLV que faltaba, los periodos parciales
@@ -142,7 +165,7 @@ fin de mes. Cada una se escribió antes del arreglo y fallaba con el código ant
 `npm run test:coverage` corre la suite con [`@vitest/coverage-v8`](https://vitest.dev/guide/coverage.html)
 y genera un reporte en texto (consola), HTML (`coverage/index.html`) y `coverage/coverage-summary.json`.
 El CI falla si la cobertura global baja de: 80% statements, 65% branches, 70% functions, 80% lines
-(medido el 24 de agosto de 2026: 88,11% / 74,87% / 81,52% / 89,36% — el umbral queda unos puntos por
+(medido el 24 de agosto de 2026: 88,69% / 76,16% / 82,84% / 89,89% — el umbral queda unos puntos por
 debajo como margen).
 
 > La tabla que Vitest imprime en consola tiene un bug conocido en esta versión: omite algunos
@@ -158,27 +181,29 @@ Cada push y cada pull request ejecuta lint, pruebas con cobertura y build autom�
 
 ```
 src/
-├── OptimizationEngine.js   # Lógica de cálculo de CDTs (sin dependencias de UI)
-├── AhorrosEngine.js        # Lógica de cálculo de la pestaña de ahorros (retorno real)
-├── parametros.js           # Constantes legales por año y parámetros configurables
-├── tasasAhorro.js          # Tasas de ahorro e inflación de referencia, con fuente y fecha
-├── almacenamiento.js       # Persistencia en localStorage, a prueba de fallos
-├── pdfExport.js            # Generación del PDF (se carga solo al exportar)
-├── vacio.js                # Stub que saca html2canvas y dompurify del bundle
-├── App.jsx                 # Layout general y navegación entre pestañas
-├── main.jsx                # Punto de entrada: monta <App /> dentro del ErrorBoundary
+├── OptimizationEngine.js       # Lógica de cálculo de CDTs (sin dependencias de UI)
+├── AhorrosEngine.js            # Lógica de cálculo de la pestaña de ahorros (retorno real)
+├── RentabilidadRealEngine.js   # Cadena tasa nominal -> retención -> retorno real
+├── parametros.js               # Constantes legales por año y parámetros configurables
+├── tasasAhorro.js              # Tasas de ahorro e inflación de referencia, con fuente y fecha
+├── almacenamiento.js           # Persistencia en localStorage, a prueba de fallos
+├── pdfExport.js                # Generación del PDF (se carga solo al exportar)
+├── vacio.js                    # Stub que saca html2canvas y dompurify del bundle
+├── App.jsx                     # Layout general y navegación entre pestañas
+├── main.jsx                    # Punto de entrada: monta <App /> dentro del ErrorBoundary
 ├── hooks/
 │   ├── useTheme.js             # Tema claro/oscuro persistido
 │   └── useEstadoPersistido.js  # useState que recuerda entre visitas
 └── components/
-    ├── CDTSimulator.jsx        # Pestaña: Optimizador de CDTs
-    ├── CostoCuentaAhorros.jsx  # Pestaña: ¿Cuánto te cuesta tu cuenta de ahorros?
-    ├── ParametrosPanel.jsx     # Panel de parámetros configurables (CDTs)
-    ├── ComparadorEscenarios.jsx# Comparación A/B (CDTs)
-    ├── PortfolioChart.jsx      # Gráfico de flujo mensual (CDTs)
-    ├── DisclaimerModal.jsx     # Aviso legal de entrada
-    ├── ThemeToggle.jsx         # Botón de tema
-    └── ErrorBoundary.jsx       # Pantalla de error ante un fallo de render
+    ├── CDTSimulator.jsx          # Pestaña: Optimizador de CDTs
+    ├── CostoCuentaAhorros.jsx    # Pestaña: ¿Cuánto te cuesta tu cuenta de ahorros?
+    ├── CadenaRentabilidadReal.jsx# Pestaña: Rentabilidad real, la cadena completa
+    ├── ParametrosPanel.jsx       # Panel de parámetros configurables (CDTs)
+    ├── ComparadorEscenarios.jsx  # Comparación A/B (CDTs)
+    ├── PortfolioChart.jsx        # Gráfico de flujo mensual (CDTs)
+    ├── DisclaimerModal.jsx       # Aviso legal de entrada
+    ├── ThemeToggle.jsx           # Botón de tema
+    └── ErrorBoundary.jsx         # Pantalla de error ante un fallo de render
 ```
 
 Toda la lógica financiera vive en `OptimizationEngine.js`, aislada de React, para que sea fácil de probar y auditar.
