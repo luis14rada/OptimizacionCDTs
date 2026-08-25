@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import CDTSimulator from './components/CDTSimulator';
 import CostoCuentaAhorros from './components/CostoCuentaAhorros';
+import CadenaRentabilidadReal from './components/CadenaRentabilidadReal';
 import DisclaimerModal from './components/DisclaimerModal';
 import ThemeToggle from './components/ThemeToggle';
 import useTheme from './hooks/useTheme';
@@ -22,6 +23,12 @@ const TABS = [
     etiqueta: 'Cuenta de ahorros',
     titulo: '¿Cuánto te cuesta tu cuenta de ahorros?',
     descripcion: 'Compará la tasa de tu cuenta contra otras del mercado colombiano y contra la inflación, para saber si tu plata gana o pierde poder adquisitivo real.'
+  },
+  {
+    id: 'cadena-rentabilidad',
+    etiqueta: 'Rentabilidad real',
+    titulo: 'Rentabilidad real: la cadena completa',
+    descripcion: 'De la tasa nominal que anuncia cualquier producto hasta lo que realmente queda después de la retención en la fuente y la inflación.'
   }
 ];
 
@@ -81,6 +88,7 @@ function App() {
         >
           {tabActiva === 'cdts' && <CDTSimulator />}
           {tabActiva === 'ahorros' && <CostoCuentaAhorros />}
+          {tabActiva === 'cadena-rentabilidad' && <CadenaRentabilidadReal />}
         </main>
 
         {/* Footer */}

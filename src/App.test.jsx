@@ -59,4 +59,17 @@ describe('App', () => {
 
     expect(screen.getByText('Optimizador Financiero')).toBeInTheDocument();
   });
+
+  it('cambiar a la pestaña de rentabilidad real muestra la cadena completa y oculta las otras', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await aceptarAviso(user);
+
+    await user.click(screen.getByRole('tab', { name: /rentabilidad real/i }));
+
+    expect(screen.getByRole('tab', { name: /rentabilidad real/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('heading', { level: 1, name: /rentabilidad real: la cadena completa/i })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /simulador.*optimizador de cdt/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /cuánto te cuesta tu cuenta de ahorros/i })).not.toBeInTheDocument();
+  });
 });
