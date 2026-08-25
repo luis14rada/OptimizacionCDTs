@@ -4,7 +4,7 @@ Estado a 24 de agosto de 2026. Salió de una auditoría del código y de dos
 investigaciones sobre el mercado colombiano. La versión con el detalle completo
 de cada propuesta está en el documento de ruta compartido aparte.
 
-**Ya desplegado en producción** (commit `42c2a18`): los tres errores de cálculo,
+**Ya desplegado en producción** (commit `48cea9b`): los tres errores de cálculo,
 los parámetros configurables, la persistencia, la comparación de escenarios A/B,
 la carga inicial reducida de 877 KB a 263 KB, la tipografía Inter, el focus trap
 del modal de aviso legal, las pruebas de `pdfExport.js` y `PortfolioChart.jsx`,
@@ -16,20 +16,40 @@ seguridad, Vercel Analytics (falta que actives
 "Web Analytics" en el dashboard del proyecto en Vercel — sin ese paso tuyo
 no se recolecta nada), poder editar un CDT existente, la pantalla vacía con
 un botón «Ver un caso de ejemplo», y el favicon nuevo ("barras en alza",
-coherente con `og-image.png`). Suite en 97 pruebas. Con esto, los nueve
-puntos del reordenamiento del 24 de agosto quedan todos resueltos.
+coherente con `og-image.png`). Con esto, los nueve puntos del reordenamiento
+del 24 de agosto quedan todos resueltos.
 
-**Resuelto y verificado, en PR pendiente de merge**: primera pestaña nueva —
-"¿Cuánto te cuesta tu cuenta de ahorros?". Compara tu cuenta contra otras 9
-entidades (o una tasa que ingreses a mano) y calcula el retorno real
-descontando inflación (ecuación de Fisher). Datos reales, no inventados:
-tasas de la Superintendencia Financiera (corte 17 de junio de 2026) e
-inflación del IPC de julio de 2026 (DANE), en `src/tasasAhorro.js` con su
-fuente y fecha. La app ahora tiene pestañas — primera vez, define el patrón
-para las próximas 11 propuestas. Efecto de paso: `App.jsx` y `useTheme.js`
-(el hallazgo en pausa, más abajo) ya tienen cobertura real vía `App.test.jsx`,
-aunque el hallazgo sigue en pausa hasta que Luis lo reactive. Suite en 111
-pruebas.
+Sobre esa base, ya desplegadas también las dos primeras pestañas nuevas y el
+rebrand que las acompaña:
+
+- **Pestaña 1 — "¿Cuánto te cuesta tu cuenta de ahorros?".** Compara tu cuenta
+  contra otras 9 entidades (o una tasa que ingreses a mano) y calcula el
+  retorno real descontando inflación (ecuación de Fisher). Datos reales:
+  tasas de la Superintendencia Financiera (corte 17 de junio de 2026) e
+  inflación del IPC de julio de 2026 (DANE), en `src/tasasAhorro.js` con su
+  fuente y fecha. Define el patrón de pestañas para el resto de la lista.
+  Efecto de paso: `App.jsx` y `useTheme.js` (el hallazgo en pausa, más abajo)
+  ya tienen cobertura real vía `App.test.jsx`, aunque el hallazgo sigue en
+  pausa hasta que Luis lo reactive.
+- **Rebrand a "Optimizador Financiero".** La app dejó de ser solo de CDTs.
+  Título, meta tags (Open Graph/Twitter) y `og-image.png` actualizados; el
+  `<h1>` del encabezado ahora cambia según la pestaña activa (el contenido de
+  "Optimizador de CDTs" no se borró, solo dejó de ser el único título fijo).
+  Se investigó automatizar la actualización mensual de `tasasAhorro.js` con
+  una GitHub Action: sin fuente confiable y automatizable (los 3 datasets de
+  tasas de captación en datos.gov.co están vacíos pese a responder HTTP 200,
+  y la página oficial de la Superfinanciera requiere simular un postback JSF
+  con tokens de ViewState) — queda descartada por ahora, con actualización
+  manual anual.
+- **Pestaña 2 — "Rentabilidad real: la cadena completa".** De la tasa nominal
+  de cualquier producto (CDT, fondo, cuenta) hasta lo que realmente queda:
+  nominal → menos retención en la fuente → menos inflación = retorno real.
+  Reutiliza datos ya sourceados (retención de `parametros.js`, inflación de
+  `tasasAhorro.js`) en vez de investigar de nuevo. Con los valores por
+  defecto (10% nominal, retención 4%), solo sobrevive el 33,67% en términos
+  reales — confirma el dolor que documentaba esta sección del backlog.
+
+Suite en 125 pruebas.
 
 **Auditado el 24 de agosto de 2026, sin cambios de código necesarios**:
 contraste de color en modo oscuro. Se midieron las 13 combinaciones de texto
@@ -62,9 +82,9 @@ quedaron todos resueltos — el favicon fue el último.
 
 ## Hacia dónde puede crecer — nuevas pestañas
 
-**Propuesta 1 resuelta, en PR pendiente de merge — ver arriba.** El hallazgo
+**Propuestas 1 y 2 resueltas y desplegadas — ver arriba.** El hallazgo
 de `App.jsx`/`useTheme.js` sin pruebas (sección "En pausa" más abajo) sigue
-pospuesto hasta que Luis decida seguir con más pestañas. Doce propuestas
+pospuesto hasta que Luis decida cerrarlo del todo. Doce propuestas
 priorizadas por dolor documentado × facilidad de cálculo × frecuencia. Cada una
 salió de investigar cifras reales del mercado colombiano, no de intuición — por
 eso el orden interno de esta tabla no se tocó al reordenar el resto del backlog.
@@ -79,7 +99,7 @@ contra el 1–2% que invierte en bolsa.
 | # | Pestaña | Dolor que resuelve |
 |---|---|---|
 | 1 | ¿Cuánto te cuesta tu cuenta de ahorros? **(resuelto)** | 143× de diferencia entre la peor y la mejor cuenta |
-| 2 | Rentabilidad real: la cadena completa | La ganancia real es menos de la mitad de la nominal |
+| 2 | Rentabilidad real: la cadena completa **(resuelto)** | La ganancia real es menos de la mitad de la nominal |
 | 3 | Calculadora UGPP con presunción de costos | 8,3 M de trabajadores por cuenta propia; deducción de 27,5%–82,3% que casi nadie usa |
 | 4 | ¿Me toca declarar renta? | Sanción mínima de $523.740 aunque declares un día tarde |
 | 5 | 4×1000: cuánto pagas y cómo dejar de pagarlo | $240.000/año evitables con un solo trámite |
@@ -91,8 +111,9 @@ contra el 1–2% que invierte en bolsa.
 | 11 | Fondo de emergencia | Solo 1 de cada 5 cubre un imprevisto |
 | 12 | Herencias y ganancia ocasional | Exenciones mal aplicadas de $85 M a $680 M |
 
-**Propuesta 1 ya resuelta** (ver arriba). Al retomar esta sección, la propuesta 2
-("Rentabilidad real: la cadena completa") sigue en el orden original de la tabla.
+**Propuestas 1 y 2 ya resueltas** (ver arriba). Al retomar esta sección, la
+propuesta 3 ("Calculadora UGPP con presunción de costos") sigue en el orden
+original de la tabla.
 
 **Nota de investigación de la propuesta 1, por si sirve para las siguientes:** de
 las tasas de ahorro investigadas, solo quedaron en `src/tasasAhorro.js` las 10
