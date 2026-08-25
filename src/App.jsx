@@ -5,6 +5,9 @@ import CadenaRentabilidadReal from './components/CadenaRentabilidadReal';
 import DeclararRenta from './components/DeclararRenta';
 import CalculadoraGMF from './components/CalculadoraGMF';
 import EscaleraCDTsFogafin from './components/EscaleraCDTsFogafin';
+import CostoRealDeuda from './components/CostoRealDeuda';
+import CuotaManejoCuenta from './components/CuotaManejoCuenta';
+import FondoEmergencia from './components/FondoEmergencia';
 import DisclaimerModal from './components/DisclaimerModal';
 import ThemeToggle from './components/ThemeToggle';
 import useTheme from './hooks/useTheme';
@@ -50,6 +53,24 @@ const TABS = [
     etiqueta: 'Escalera Fogafín',
     titulo: 'Escalera de CDTs y cobertura Fogafín',
     descripcion: 'Repartí tu plata entre entidades para que el seguro de depósitos cubra todo lo que tenés invertido.'
+  },
+  {
+    id: 'costo-deuda',
+    etiqueta: 'Costo de tu deuda',
+    titulo: 'El costo real de tu deuda',
+    descripcion: 'Compará la tasa que te cobran contra la tasa de usura y descubrí si estás pagando de más -- o algo ilegal.'
+  },
+  {
+    id: 'cuota-manejo',
+    etiqueta: 'Costo de tu cuenta',
+    titulo: 'Costo total de tener una cuenta',
+    descripcion: 'Sumá lo que te cobra tu banco por cuota de manejo y tarjeta débito, y mirá cuánto es al año.'
+  },
+  {
+    id: 'fondo-emergencia',
+    etiqueta: 'Fondo de emergencia',
+    titulo: 'Fondo de emergencia',
+    descripcion: 'Calculá cuánto necesitás ahorrado para cubrir varios meses de gastos si algo imprevisto pasa.'
   }
 ];
 
@@ -113,6 +134,9 @@ function App() {
           {tabActiva === 'declarar-renta' && <DeclararRenta />}
           {tabActiva === 'gmf' && <CalculadoraGMF />}
           {tabActiva === 'fogafin' && <EscaleraCDTsFogafin />}
+          {tabActiva === 'costo-deuda' && <CostoRealDeuda />}
+          {tabActiva === 'cuota-manejo' && <CuotaManejoCuenta />}
+          {tabActiva === 'fondo-emergencia' && <FondoEmergencia />}
         </main>
 
         {/* Footer */}

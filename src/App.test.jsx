@@ -102,4 +102,34 @@ describe('App', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: /escalera de cdts y cobertura fogafín/i })).toBeInTheDocument();
   });
+
+  it('cambiar a la pestaña "Costo de tu deuda" muestra esa herramienta', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await aceptarAviso(user);
+
+    await user.click(screen.getByRole('tab', { name: /costo de tu deuda/i }));
+
+    expect(screen.getByRole('heading', { level: 1, name: /el costo real de tu deuda/i })).toBeInTheDocument();
+  });
+
+  it('cambiar a la pestaña "Costo de tu cuenta" muestra esa herramienta', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await aceptarAviso(user);
+
+    await user.click(screen.getByRole('tab', { name: /costo de tu cuenta/i }));
+
+    expect(screen.getByRole('heading', { level: 1, name: /costo total de tener una cuenta/i })).toBeInTheDocument();
+  });
+
+  it('cambiar a la pestaña "Fondo de emergencia" muestra esa herramienta', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await aceptarAviso(user);
+
+    await user.click(screen.getByRole('tab', { name: /fondo de emergencia/i }));
+
+    expect(screen.getByRole('heading', { level: 1, name: /^fondo de emergencia$/i })).toBeInTheDocument();
+  });
 });
