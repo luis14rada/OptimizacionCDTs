@@ -82,7 +82,7 @@ quedaron todos resueltos — el favicon fue el último.
 
 ## Hacia dónde puede crecer — nuevas pestañas
 
-**Propuestas 1 y 2 resueltas y desplegadas — ver arriba.** El hallazgo
+**Propuestas 1 a 5 resueltas y desplegadas — ver arriba.** El hallazgo
 de `App.jsx`/`useTheme.js` sin pruebas (sección "En pausa" más abajo) sigue
 pospuesto hasta que Luis decida cerrarlo del todo. Doce propuestas
 priorizadas por dolor documentado × facilidad de cálculo × frecuencia. Cada una
@@ -104,9 +104,9 @@ adultos tiene cuenta de ahorros, contra el 1–2% que invierte en bolsa.
 |---|---|---|
 | 1 | ¿Cuánto te cuesta tu cuenta de ahorros? **(resuelto)** | 143× de diferencia entre la peor y la mejor cuenta |
 | 2 | Rentabilidad real: la cadena completa **(resuelto)** | La ganancia real es menos de la mitad de la nominal |
-| 3 | ¿Me toca declarar renta? **(en desarrollo)** | Sanción mínima de $523.740 aunque declares un día tarde |
-| 4 | 4×1000: cuánto pagas y cómo dejar de pagarlo **(en desarrollo)** | $240.000/año evitables con un solo trámite |
-| 5 | Escalera de CDTs y cobertura Fogafín **(en desarrollo)** | El seguro cubre $50 M por entidad; nadie ayuda a repartir |
+| 3 | ¿Me toca declarar renta? **(resuelto)** | Sanción mínima de $523.740 aunque declares un día tarde |
+| 4 | 4×1000: cuánto pagas y cómo dejar de pagarlo **(resuelto)** | $240.000/año evitables con un solo trámite |
+| 5 | Escalera de CDTs y cobertura Fogafín **(resuelto)** | El seguro cubre $50 M por entidad; nadie ayuda a repartir |
 | 6 | Qué hacer con la prima y las cesantías | 79% se arrepiente de cómo gastó su prima |
 | 7 | El costo real de tu deuda | Usura al 29,66%; gota a gota al 382% |
 | 8 | Detector de pirámides | 262.000 víctimas, $4,2 billones perdidos |
@@ -115,10 +115,9 @@ adultos tiene cuenta de ahorros, contra el 1–2% que invierte en bolsa.
 | 11 | Herencias y ganancia ocasional | Exenciones mal aplicadas de $85 M a $680 M |
 | 12 | Calculadora UGPP con presunción de costos **(en pausa, no desarrollar salvo pedido explícito)** | 8,3 M de trabajadores por cuenta propia; deducción de 27,5%–82,3% que casi nadie usa |
 
-**Propuestas 1 y 2 ya resueltas** (ver arriba). Las propuestas 3, 4 y 5 (¿Me toca
-declarar renta?, 4×1000, Escalera de CDTs y cobertura Fogafín) se están resolviendo
-en bundle -- ver la nota de investigación legal más abajo. Al retomar esta sección
-después, la propuesta 6 ("Qué hacer con la prima y las cesantías") sigue el orden.
+**Propuestas 1 a 5 ya resueltas** (ver arriba; 3, 4 y 5 se resolvieron en bundle,
+ver la nota de investigación legal más abajo). Al retomar esta sección, la
+propuesta 6 ("Qué hacer con la prima y las cesantías") sigue el orden.
 
 **Nota de investigación de la propuesta 1, por si sirve para las siguientes:** de
 las tasas de ahorro investigadas, solo quedaron en `src/tasasAhorro.js` las 10
