@@ -4,7 +4,7 @@ Estado a 24 de agosto de 2026. Salió de una auditoría del código y de dos
 investigaciones sobre el mercado colombiano. La versión con el detalle completo
 de cada propuesta está en el documento de ruta compartido aparte.
 
-**Ya desplegado en producción** (commit `886427b`): los tres errores de cálculo,
+**Ya desplegado en producción** (commit `05a5f5a`): los tres errores de cálculo,
 los parámetros configurables, la persistencia, la comparación de escenarios A/B,
 la carga inicial reducida de 877 KB a 263 KB, la tipografía Inter, el focus trap
 del modal de aviso legal, las pruebas de `pdfExport.js` y `PortfolioChart.jsx`,
@@ -12,17 +12,20 @@ el bug del SMMLV fijo en el gráfico que no seguía el año gravable seleccionad
 la tabla accesible equivalente al gráfico de flujo mensual, el Error Boundary,
 el reporte de cobertura con umbral mínimo en el CI (ver hallazgo sobre
 `App.jsx` y `useTheme.js` más abajo, en "Hallazgo sin decidir"), las cabeceras
-de seguridad y Vercel Analytics (falta que actives "Web Analytics" en el
-dashboard del proyecto en Vercel — sin ese paso tuyo no se recolecta nada).
-Suite en 94 pruebas.
+de seguridad, Vercel Analytics (falta que actives "Web Analytics" en el
+dashboard del proyecto en Vercel — sin ese paso tuyo no se recolecta nada),
+poder editar un CDT existente (botón "Editar" junto a "Eliminar", con
+"Cancelar edición" para descartar cambios a medias), y la pantalla vacía con
+un botón «Ver un caso de ejemplo» que carga dos CDTs elegidos a propósito
+para mostrar de entrada el hallazgo central de la app: cada uno por separado
+no llega al tope de 1 SMMLV, pero sus intereses del mismo mes combinados sí
+lo superan. Suite en 97 pruebas.
 
-**Resuelto y verificado, en PR pendiente de merge** (segundo bundle): se puede
-editar un CDT existente en vez de solo eliminar y volver a crear (botón
-"Editar" junto a "Eliminar", con "Cancelar edición" para descartar cambios a
-medias), y la pantalla vacía tiene un botón «Ver un caso de ejemplo» que
-carga dos CDTs elegidos a propósito para mostrar de entrada el hallazgo
-central de la app: cada uno por separado no llega al tope de 1 SMMLV, pero
-sus intereses del mismo mes combinados sí lo superan. Suite en 97 pruebas.
+**Resuelto y verificado, en PR pendiente de merge**: favicon nuevo —
+"barras en alza" (opción B de las cuatro propuestas), mismo gradiente
+azul→índigo que ya usa el encabezado de la app, coherente con
+`og-image.png`. Bajó de 9.522 a 709 bytes; el diseño anterior era el rayo
+morado sin editar de la plantilla de Vite.
 
 **Auditado el 24 de agosto de 2026, sin cambios de código necesarios**:
 contraste de color en modo oscuro. Se midieron las 13 combinaciones de texto
@@ -48,16 +51,17 @@ producir una cifra equivocada o dejar a alguien sin acceso va antes que lo
 cosmético. Se trabaja de arriba hacia abajo, cerrando y verificando cada punto
 antes de pasar al siguiente.
 
-### 1. El favicon sigue siendo el de la plantilla de Vite
-*Calidad e infraestructura.* `public/favicon.svg` es un rayo morado que no dice
-nada del producto. Debería ser coherente con `public/og-image.png`, que sí tiene
-la identidad visual de la app. En espera de que Luis defina qué ícono usar.
+*Sin puntos activos.* Los nueve del reordenamiento del 24 de agosto de 2026
+quedaron todos resueltos — el favicon (arriba) era el último. Los dos
+hallazgos sin decidir (`App.jsx`/`useTheme.js` sin pruebas, más abajo) y los
+dos puntos en pausa a pedido de Luis siguen fuera del flujo activo hasta
+nueva indicación.
 
 ---
 
 ## Hacia dónde puede crecer — nuevas pestañas
 
-**En espera hasta cerrar el punto anterior (favicon).** Doce propuestas
+**Con el reordenamiento cerrado, esta es la sección activa siguiente.** Doce propuestas
 priorizadas por dolor documentado × facilidad de cálculo × frecuencia. Cada una
 salió de investigar cifras reales del mercado colombiano, no de intuición — por
 eso el orden interno de esta tabla no se tocó al reordenar el resto del backlog.
