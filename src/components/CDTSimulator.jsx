@@ -30,6 +30,22 @@ const CAMPOS_INICIALES = {
   fechaInicio: new Date().toISOString().split('T')[0]
 };
 
+// Elegidos a propósito: cada uno por separado no llega al tope de 1 SMMLV de
+// 2026, pero sus intereses mensuales combinados sí lo superan -- muestra de
+// entrada el hallazgo central de la app (la UGPP consolida los CDTs del
+// mismo mes), no solo un formulario lleno.
+const EJEMPLO_CDTS = [
+  { banco: 'Bancolombia', valor: 150000000, tasaEA: 12, frecuenciaPago: 'mensual', plazoMeses: 12 },
+  { banco: 'Davivienda', valor: 150000000, tasaEA: 11.5, frecuenciaPago: 'mensual', plazoMeses: 12 }
+];
+
+const calcularFechaVencimiento = (fechaInicio, plazoMeses) => {
+  const fechaInicioObj = new Date(fechaInicio + 'T12:00:00');
+  const fechaVencimientoObj = new Date(fechaInicioObj);
+  fechaVencimientoObj.setMonth(fechaVencimientoObj.getMonth() + plazoMeses);
+  return fechaVencimientoObj.toISOString().split('T')[0];
+};
+
 const exportarCSV = (cdts, totales) => {
   const encabezado = [
     'Banco', 'Valor Invertido', 'Tasa EA (%)', 'Frecuencia', 'Plazo (meses)',
@@ -125,6 +141,20 @@ export default function CDTSimulator() {
     });
   };
 
+  // Cambiar de escenario mientras se edita un CDT dejaría el formulario
+  // "editando" algo que ya no es lo que se ve en pantalla -- se limpia junto
+  // con el cambio.
+  const salirDeEdicion = () => {
+    setEditandoId(null);
+    setForm(CAMPOS_INICIALES);
+    setErrores({});
+  };
+
+  const cambiarEscenario = (clave) => {
+    setEscenarioActivo(clave);
+    salirDeEdicion();
+  };
+
   const duplicarEscenario = () => {
     setEscenarios(prev => ({
       ...prev,
@@ -135,15 +165,18 @@ export default function CDTSimulator() {
       }
     }));
     setEscenarioActivo('B');
+    salirDeEdicion();
   };
 
   const eliminarComparacion = () => {
     setEscenarios(prev => ({ ...prev, B: null }));
     setEscenarioActivo('A');
+    salirDeEdicion();
   };
 
   const [form, setForm] = useState(CAMPOS_INICIALES);
   const [errores, setErrores] = useState({});
+  const [editandoId, setEditandoId] = useState(null);
   const [maxInversionCalc, setMaxInversionCalc] = useState(null);
   const [avisoTope, setAvisoTope] = useState('');
   const [generandoPDF, setGenerandoPDF] = useState(false);
@@ -188,33 +221,63 @@ export default function CDTSimulator() {
       return;
     }
 
-    const inversion = parseFloat(form.valor);
-    const tasa = parseFloat(form.tasaEA);
     const plazo = parseInt(form.plazoMeses, 10);
-
-    const fechaInicioObj = new Date(form.fechaInicio + 'T12:00:00');
-    const fechaVencimientoObj = new Date(fechaInicioObj);
-    fechaVencimientoObj.setMonth(fechaVencimientoObj.getMonth() + plazo);
-    const fechaVencimiento = fechaVencimientoObj.toISOString().split('T')[0];
-
-    const newCdt = {
-      id: Date.now(),
+    const datosCdt = {
       banco: form.banco.trim(),
-      valor: inversion,
-      tasaEA: tasa,
+      valor: parseFloat(form.valor),
+      tasaEA: parseFloat(form.tasaEA),
       frecuenciaPago: form.frecuenciaPago,
       plazoMeses: plazo,
       fechaInicio: form.fechaInicio,
-      fechaVencimiento
+      fechaVencimiento: calcularFechaVencimiento(form.fechaInicio, plazo)
     };
 
-    setRawCdts(prev => [...prev, newCdt]);
+    if (editandoId !== null) {
+      setRawCdts(prev => prev.map(c => (c.id === editandoId ? { ...datosCdt, id: editandoId } : c)));
+      setEditandoId(null);
+    } else {
+      setRawCdts(prev => [...prev, { ...datosCdt, id: Date.now() }]);
+    }
+
     setForm(f => ({ ...CAMPOS_INICIALES, frecuenciaPago: f.frecuenciaPago, plazoMeses: f.plazoMeses }));
     setErrores({});
   };
 
+  const handleEditarCDT = (cdt) => {
+    setForm({
+      banco: cdt.banco,
+      valor: String(cdt.valor),
+      tasaEA: String(cdt.tasaEA),
+      plazoMeses: String(cdt.plazoMeses),
+      frecuenciaPago: cdt.frecuenciaPago,
+      fechaInicio: cdt.fechaInicio
+    });
+    setEditandoId(cdt.id);
+    setErrores({});
+  };
+
+  const handleCancelarEdicion = () => {
+    salirDeEdicion();
+  };
+
   const handleRemoveCDT = (id) => {
     setRawCdts(prev => prev.filter(c => c.id !== id));
+    if (editandoId === id) {
+      salirDeEdicion();
+    }
+  };
+
+  // Dos CDTs completos, listos para verse en la tabla y el gráfico sin que
+  // la persona tenga que escribir nada -- pensado para la pantalla vacía.
+  const cargarEjemplo = () => {
+    const hoy = new Date().toISOString().split('T')[0];
+    const nuevos = EJEMPLO_CDTS.map((base, i) => ({
+      ...base,
+      id: Date.now() + i,
+      fechaInicio: hoy,
+      fechaVencimiento: calcularFechaVencimiento(hoy, base.plazoMeses)
+    }));
+    setRawCdts(prev => [...prev, ...nuevos]);
   };
 
   const handleCalcularMaximo = () => {
@@ -259,7 +322,7 @@ export default function CDTSimulator() {
             <button
               key={clave}
               type="button"
-              onClick={() => setEscenarioActivo(clave)}
+              onClick={() => cambiarEscenario(clave)}
               aria-pressed={escenarioActivo === clave}
               className={escenarioActivo === clave
                 ? 'btn-primary py-1.5 px-4 text-sm'
@@ -288,6 +351,17 @@ export default function CDTSimulator() {
       {/* Section 1: Optimization Calculator */}
       <section className="glass-card p-6 md:p-8 print:hidden">
         <h2 className="text-2xl font-bold mb-4 text-primary-900 dark:text-primary-100">Simulador &amp; Optimizador de CDT</h2>
+
+        {rawCdts.length === 0 && (
+          <div className="mb-6 p-4 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-xl flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+            <p className="text-sm text-primary-900 dark:text-primary-200">
+              ¿Primera vez acá? Cargá un caso de ejemplo y mirá cómo funciona en tres segundos, sin escribir nada.
+            </p>
+            <button type="button" onClick={cargarEjemplo} className="btn-secondary whitespace-nowrap">
+              Ver un caso de ejemplo
+            </button>
+          </div>
+        )}
 
         <form onSubmit={handleAddCDT} noValidate className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="space-y-2">
@@ -399,8 +473,13 @@ export default function CDTSimulator() {
 
           <div className="col-span-1 md:col-span-2 lg:col-span-3 flex flex-col sm:flex-row gap-4 mt-2">
             <button type="submit" className="btn-primary flex-1">
-              Agregar CDT a la simulación
+              {editandoId !== null ? 'Guardar cambios' : 'Agregar CDT a la simulación'}
             </button>
+            {editandoId !== null && (
+              <button type="button" onClick={handleCancelarEdicion} className="btn-secondary flex-1">
+                Cancelar edición
+              </button>
+            )}
             <button type="button" onClick={handleCalcularMaximo} className="btn-secondary flex-1 border-primary-500 text-primary-600 dark:text-primary-400">
               Calcular Tope Máximo (Sin SS)
             </button>
@@ -530,7 +609,12 @@ export default function CDTSimulator() {
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
               {portfolioData.cdts.map((cdt) => (
-                <tr key={cdt.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                <tr
+                  key={cdt.id}
+                  className={`transition-colors ${cdt.id === editandoId
+                    ? 'bg-primary-50 dark:bg-primary-900/20'
+                    : 'hover:bg-slate-50/50 dark:hover:bg-slate-800/30'}`}
+                >
                   <td className="py-4 px-4">{cdt.fechaVencimiento}</td>
                   <td className="py-4 px-4 font-medium">{cdt.banco}</td>
                   <td className="py-4 px-4">{formatCurrency(cdt.valor)}</td>
@@ -543,13 +627,23 @@ export default function CDTSimulator() {
                   <td className="py-4 px-4 font-bold text-primary-600 dark:text-primary-400">{formatCurrency(cdt.totalInteresNeto)}</td>
                   <td className="py-4 px-4 font-bold">{formatCurrency(cdt.finalPlazo)}</td>
                   <td className="py-4 px-4 print:hidden">
-                    <button
-                      onClick={() => handleRemoveCDT(cdt.id)}
-                      className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium"
-                      aria-label={`Eliminar CDT de ${cdt.banco}`}
-                    >
-                      Eliminar
-                    </button>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => handleEditarCDT(cdt)}
+                        className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
+                        aria-label={`Editar CDT de ${cdt.banco}`}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => handleRemoveCDT(cdt.id)}
+                        className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium"
+                        aria-label={`Eliminar CDT de ${cdt.banco}`}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

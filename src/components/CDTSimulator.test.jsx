@@ -158,4 +158,63 @@ describe('CDTSimulator', () => {
 
     expect(await screen.findByText(/portafolio está optimizado/i)).toBeInTheDocument();
   });
+
+  it('editar un CDT existente actualiza sus datos en la tabla en vez de duplicar la fila', async () => {
+    const user = userEvent.setup();
+    render(<CDTSimulator />);
+
+    await llenarFormularioValido(user);
+    await user.click(screen.getByRole('button', { name: /agregar cdt a la simulación/i }));
+    await screen.findByText('Bancolombia');
+
+    await user.click(screen.getByRole('button', { name: /editar cdt de bancolombia/i }));
+
+    // El formulario queda lleno con los datos del CDT y el botón cambia de texto.
+    expect(screen.getByLabelText(/banco \/ entidad/i)).toHaveValue('Bancolombia');
+    expect(screen.getByLabelText(/valor inversión/i)).toHaveValue(10000000);
+    expect(screen.getByRole('button', { name: /guardar cambios/i })).toBeInTheDocument();
+
+    await user.clear(screen.getByLabelText(/banco \/ entidad/i));
+    await user.type(screen.getByLabelText(/banco \/ entidad/i), 'Davivienda');
+    await user.click(screen.getByRole('button', { name: /guardar cambios/i }));
+
+    expect(await screen.findByText('Davivienda')).toBeInTheDocument();
+    expect(screen.queryByText('Bancolombia')).not.toBeInTheDocument();
+    // Una sola fila de datos, no dos -- se editó en el lugar, no se duplicó.
+    expect(screen.getAllByRole('button', { name: /eliminar cdt/i })).toHaveLength(1);
+  });
+
+  it('cancelar la edición no cambia el CDT original y limpia el formulario', async () => {
+    const user = userEvent.setup();
+    render(<CDTSimulator />);
+
+    await llenarFormularioValido(user);
+    await user.click(screen.getByRole('button', { name: /agregar cdt a la simulación/i }));
+    await screen.findByText('Bancolombia');
+
+    await user.click(screen.getByRole('button', { name: /editar cdt de bancolombia/i }));
+    await user.clear(screen.getByLabelText(/banco \/ entidad/i));
+    await user.type(screen.getByLabelText(/banco \/ entidad/i), 'Davivienda');
+
+    await user.click(screen.getByRole('button', { name: /cancelar edición/i }));
+
+    expect(screen.getByText('Bancolombia')).toBeInTheDocument();
+    expect(screen.queryByText('Davivienda')).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/banco \/ entidad/i)).toHaveValue('');
+    expect(screen.getByRole('button', { name: /agregar cdt a la simulación/i })).toBeInTheDocument();
+  });
+
+  it('el botón de ejemplo solo aparece con el portafolio vacío y carga dos CDTs al hacer clic', async () => {
+    const user = userEvent.setup();
+    render(<CDTSimulator />);
+
+    const botonEjemplo = screen.getByRole('button', { name: /ver un caso de ejemplo/i });
+    expect(botonEjemplo).toBeInTheDocument();
+
+    await user.click(botonEjemplo);
+
+    expect(await screen.findByRole('heading', { name: /portafolio de cdts/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /eliminar cdt/i })).toHaveLength(2);
+    expect(screen.queryByRole('button', { name: /ver un caso de ejemplo/i })).not.toBeInTheDocument();
+  });
 });
