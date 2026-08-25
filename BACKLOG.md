@@ -4,28 +4,32 @@ Estado a 24 de agosto de 2026. Salió de una auditoría del código y de dos
 investigaciones sobre el mercado colombiano. La versión con el detalle completo
 de cada propuesta está en el documento de ruta compartido aparte.
 
-**Ya desplegado en producción** (commit `05a5f5a`): los tres errores de cálculo,
+**Ya desplegado en producción** (commit `42c2a18`): los tres errores de cálculo,
 los parámetros configurables, la persistencia, la comparación de escenarios A/B,
 la carga inicial reducida de 877 KB a 263 KB, la tipografía Inter, el focus trap
 del modal de aviso legal, las pruebas de `pdfExport.js` y `PortfolioChart.jsx`,
 el bug del SMMLV fijo en el gráfico que no seguía el año gravable seleccionado,
 la tabla accesible equivalente al gráfico de flujo mensual, el Error Boundary,
 el reporte de cobertura con umbral mínimo en el CI (ver hallazgo sobre
-`App.jsx` y `useTheme.js` más abajo, en "Hallazgo sin decidir"), las cabeceras
-de seguridad, Vercel Analytics (falta que actives "Web Analytics" en el
-dashboard del proyecto en Vercel — sin ese paso tuyo no se recolecta nada),
-poder editar un CDT existente (botón "Editar" junto a "Eliminar", con
-"Cancelar edición" para descartar cambios a medias), y la pantalla vacía con
-un botón «Ver un caso de ejemplo» que carga dos CDTs elegidos a propósito
-para mostrar de entrada el hallazgo central de la app: cada uno por separado
-no llega al tope de 1 SMMLV, pero sus intereses del mismo mes combinados sí
-lo superan. Suite en 97 pruebas.
+`App.jsx` y `useTheme.js` más abajo, en "En pausa"), las cabeceras de
+seguridad, Vercel Analytics (falta que actives
+"Web Analytics" en el dashboard del proyecto en Vercel — sin ese paso tuyo
+no se recolecta nada), poder editar un CDT existente, la pantalla vacía con
+un botón «Ver un caso de ejemplo», y el favicon nuevo ("barras en alza",
+coherente con `og-image.png`). Suite en 97 pruebas. Con esto, los nueve
+puntos del reordenamiento del 24 de agosto quedan todos resueltos.
 
-**Resuelto y verificado, en PR pendiente de merge**: favicon nuevo —
-"barras en alza" (opción B de las cuatro propuestas), mismo gradiente
-azul→índigo que ya usa el encabezado de la app, coherente con
-`og-image.png`. Bajó de 9.522 a 709 bytes; el diseño anterior era el rayo
-morado sin editar de la plantilla de Vite.
+**Resuelto y verificado, en PR pendiente de merge**: primera pestaña nueva —
+"¿Cuánto te cuesta tu cuenta de ahorros?". Compara tu cuenta contra otras 9
+entidades (o una tasa que ingreses a mano) y calcula el retorno real
+descontando inflación (ecuación de Fisher). Datos reales, no inventados:
+tasas de la Superintendencia Financiera (corte 17 de junio de 2026) e
+inflación del IPC de julio de 2026 (DANE), en `src/tasasAhorro.js` con su
+fuente y fecha. La app ahora tiene pestañas — primera vez, define el patrón
+para las próximas 11 propuestas. Efecto de paso: `App.jsx` y `useTheme.js`
+(el hallazgo en pausa, más abajo) ya tienen cobertura real vía `App.test.jsx`,
+aunque el hallazgo sigue en pausa hasta que Luis lo reactive. Suite en 111
+pruebas.
 
 **Auditado el 24 de agosto de 2026, sin cambios de código necesarios**:
 contraste de color en modo oscuro. Se midieron las 13 combinaciones de texto
@@ -52,16 +56,15 @@ cosmético. Se trabaja de arriba hacia abajo, cerrando y verificando cada punto
 antes de pasar al siguiente.
 
 *Sin puntos activos.* Los nueve del reordenamiento del 24 de agosto de 2026
-quedaron todos resueltos — el favicon (arriba) era el último. Los dos
-hallazgos sin decidir (`App.jsx`/`useTheme.js` sin pruebas, más abajo) y los
-dos puntos en pausa a pedido de Luis siguen fuera del flujo activo hasta
-nueva indicación.
+quedaron todos resueltos — el favicon fue el último.
 
 ---
 
 ## Hacia dónde puede crecer — nuevas pestañas
 
-**Con el reordenamiento cerrado, esta es la sección activa siguiente.** Doce propuestas
+**Propuesta 1 resuelta, en PR pendiente de merge — ver arriba.** El hallazgo
+de `App.jsx`/`useTheme.js` sin pruebas (sección "En pausa" más abajo) sigue
+pospuesto hasta que Luis decida seguir con más pestañas. Doce propuestas
 priorizadas por dolor documentado × facilidad de cálculo × frecuencia. Cada una
 salió de investigar cifras reales del mercado colombiano, no de intuición — por
 eso el orden interno de esta tabla no se tocó al reordenar el resto del backlog.
@@ -75,7 +78,7 @@ contra el 1–2% que invierte en bolsa.
 
 | # | Pestaña | Dolor que resuelve |
 |---|---|---|
-| 1 | ¿Cuánto te cuesta tu cuenta de ahorros? | 143× de diferencia entre la peor y la mejor cuenta |
+| 1 | ¿Cuánto te cuesta tu cuenta de ahorros? **(resuelto)** | 143× de diferencia entre la peor y la mejor cuenta |
 | 2 | Rentabilidad real: la cadena completa | La ganancia real es menos de la mitad de la nominal |
 | 3 | Calculadora UGPP con presunción de costos | 8,3 M de trabajadores por cuenta propia; deducción de 27,5%–82,3% que casi nadie usa |
 | 4 | ¿Me toca declarar renta? | Sanción mínima de $523.740 aunque declares un día tarde |
@@ -88,9 +91,17 @@ contra el 1–2% que invierte en bolsa.
 | 11 | Fondo de emergencia | Solo 1 de cada 5 cubre un imprevisto |
 | 12 | Herencias y ganancia ocasional | Exenciones mal aplicadas de $85 M a $680 M |
 
-**Recomendación (cuando llegue el momento):** la propuesta 1 como siguiente
-pestaña. Mayor dolor documentado, la más fácil de calcular, y abre la puerta a un
-público cien veces más grande.
+**Propuesta 1 ya resuelta** (ver arriba). Al retomar esta sección, la propuesta 2
+("Rentabilidad real: la cadena completa") sigue en el orden original de la tabla.
+
+**Nota de investigación de la propuesta 1, por si sirve para las siguientes:** de
+las tasas de ahorro investigadas, solo quedaron en `src/tasasAhorro.js` las 10
+entidades con cifra exacta de la misma fuente (Superfinanciera) y fecha de corte.
+BBVA y Davivienda quedaron afuera a propósito: lo único que se encontró de esos
+bancos fue la tasa promocional de un producto puntual, no el promedio comparable
+con el resto — mezclar esas dos metodologías habría hecho la tabla engañosa. Si
+alguna propuesta futura necesita datos de mercado, vale la pena aplicar el mismo
+criterio: una sola fuente, una sola metodología, por tabla.
 
 ### Límites que aplican a todas
 
@@ -110,25 +121,20 @@ público cien veces más grande.
 
 ---
 
-## Hallazgo sin decidir
-
-Encontrado el 24 de agosto de 2026 al configurar el reporte de cobertura
-(`vite.config.js`, punto resuelto arriba). No es algo que Luis haya pedido
-posponer — queda documentado para decidir si se agrega como punto activo.
-
-### `App.jsx` y `src/hooks/useTheme.js` sin ninguna prueba
-Con `coverage.all: true` (para que un archivo sin pruebas cuente como 0% en
-vez de desaparecer del cálculo), ambos quedan en **0%** de cobertura. `App.jsx`
-tiene lógica real (el estado del aviso legal aceptado); `useTheme.js` maneja
-la persistencia del tema claro/oscuro. Ninguno de los dos tiene un archivo
-`.test.jsx`/`.test.js` hoy.
-
----
-
 ## En pausa — no tocar salvo que se pida explícitamente
 
-Bajados de prioridad el 24 de agosto de 2026 a pedido de Luis. Se quedan aquí
-documentados pero fuera del flujo de trabajo activo hasta nueva indicación.
+Bajados de prioridad a pedido de Luis. Se quedan aquí documentados pero fuera
+del flujo de trabajo activo hasta nueva indicación.
+
+### `App.jsx` y `src/hooks/useTheme.js` sin pruebas dedicadas
+Encontrado el 24 de agosto de 2026 al configurar el reporte de cobertura:
+ambos estaban en **0%**, sin ningún archivo `.test.jsx`/`.test.js`. Al armar
+`App.test.jsx` para las pestañas (más arriba), `App.jsx` quedó en **100%** de
+cobertura y `useTheme.js` en **80%** como efecto de paso — pero fue
+incidental, cubre lo que ese test necesitaba ejercitar para las pestañas, no
+un análisis dedicado de `useTheme.js` (persistencia del tema, detección de
+preferencia del sistema, etc.). Sigue en pausa desde el 24 de agosto de 2026
+hasta que Luis pida cerrarlo del todo.
 
 ### Validar los valores por defecto con un contador
 No es tarea de código. Los parámetros del panel (`src/parametros.js`) ya son
