@@ -53,7 +53,7 @@ export default function FondoEmergencia() {
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="ahorro-actual" className="text-sm font-semibold">Ahorro que ya tenés para esto (COP)</label>
+            <label htmlFor="ahorro-actual" className="text-sm font-semibold">Ahorro que ya tienes para esto (COP)</label>
             <input
               id="ahorro-actual"
               type="number"
@@ -66,7 +66,7 @@ export default function FondoEmergencia() {
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="meses-objetivo" className="text-sm font-semibold">Meses de cobertura que querés</label>
+            <label htmlFor="meses-objetivo" className="text-sm font-semibold">Meses de cobertura que quieres</label>
             <input
               id="meses-objetivo"
               type="number"
@@ -110,12 +110,12 @@ export default function FondoEmergencia() {
             <div className="p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-xl flex gap-3 items-start">
               <span className="text-xl" aria-hidden="true">✅</span>
               <p className="text-sm text-green-800 dark:text-green-300">
-                Ya tenés cubierta tu meta de {mesesObjetivo} {mesesObjetivo === 1 ? 'mes' : 'meses'} de gastos.
+                Ya tienes cubierta tu meta de {mesesObjetivo} {mesesObjetivo === 1 ? 'mes' : 'meses'} de gastos.
               </p>
             </div>
           ) : (
             <p className="text-sm text-slate-600 dark:text-slate-300">
-              Hoy tenés cubiertos {resultado.mesesCubiertosHoy.toFixed(1)} {resultado.mesesCubiertosHoy === 1 ? 'mes' : 'meses'} de gastos.
+              Hoy tienes cubiertos {resultado.mesesCubiertosHoy.toFixed(1)} {resultado.mesesCubiertosHoy === 1 ? 'mes' : 'meses'} de gastos.
             </p>
           )}
         </section>

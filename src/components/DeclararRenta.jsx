@@ -39,7 +39,7 @@ export default function DeclararRenta() {
           <p className="text-sm text-slate-600 dark:text-slate-300 max-w-3xl">
             Para el año gravable {supuestos.anioGravable} (declaración en {supuestos.anioGravable + 1}), la ley exige
             declarar renta a quien supere <strong>al menos uno</strong> de estos cinco topes -- no hace falta superarlos
-            todos. Ingresá tus valores del año para revisar cada criterio.
+            todos. Ingresa tus valores del año para revisar cada criterio.
           </p>
         </div>
 
@@ -68,7 +68,7 @@ export default function DeclararRenta() {
             <div className="p-4 bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded-xl flex gap-3 items-start">
               <span className="text-xl" aria-hidden="true">⚠️</span>
               <div>
-                <p className="text-orange-900 dark:text-orange-200 font-semibold text-lg">Quedás obligado a declarar renta</p>
+                <p className="text-orange-900 dark:text-orange-200 font-semibold text-lg">Quedas obligado a declarar renta</p>
                 <p className="text-sm text-orange-800 dark:text-orange-300 mt-1">
                   Superaste {resultado.criteriosSuperados.length === 1 ? 'este criterio' : 'estos criterios'}:{' '}
                   {resultado.criteriosSuperados.map(c => c.etiqueta.toLowerCase()).join(', ')}.
@@ -79,9 +79,9 @@ export default function DeclararRenta() {
             <div className="p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-xl flex gap-3 items-start">
               <span className="text-xl" aria-hidden="true">✅</span>
               <div>
-                <p className="text-green-900 dark:text-green-200 font-semibold text-lg">No quedás obligado a declarar renta</p>
+                <p className="text-green-900 dark:text-green-200 font-semibold text-lg">No quedas obligado a declarar renta</p>
                 <p className="text-sm text-green-800 dark:text-green-300 mt-1">
-                  Con los valores ingresados, ningún criterio supera su tope. Podés declarar de todas formas de forma
+                  Con los valores ingresados, ningún criterio supera su tope. Puedes declarar de todas formas de forma
                   voluntaria (por ejemplo, para recuperar retenciones).
                 </p>
               </div>
@@ -175,13 +175,13 @@ export default function DeclararRenta() {
 
       <section className="glass-card p-6 md:p-8 space-y-2">
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          Si declarás tarde, la sanción mínima por extemporaneidad es {formatCurrency(sancionMinima)}{' '}
-          ({supuestos.sancionMinimaUvt} UVT del año en que presentás, aunque la declaración dé saldo a favor o en ceros).
+          Si declaras tarde, la sanción mínima por extemporaneidad es {formatCurrency(sancionMinima)}{' '}
+          ({supuestos.sancionMinimaUvt} UVT del año en que presentas, aunque la declaración dé saldo a favor o en ceros).
         </p>
         <p className="text-xs text-slate-500 dark:text-slate-400">
           Fuente: {FUENTE_RENTA} Esta herramienta evalúa los cinco topes generales; no cubre todas las excepciones (por
           ejemplo, responsables de IVA o ingresos por servicios digitales del exterior tienen obligación adicional
-          aunque no superen estos topes). Validá siempre tu caso con un contador antes de decidir no declarar.
+          aunque no superen estos topes). Valida siempre tu caso con un contador antes de decidir no declarar.
         </p>
       </section>
     </div>

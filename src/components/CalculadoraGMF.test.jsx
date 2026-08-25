@@ -4,22 +4,47 @@ import userEvent from '@testing-library/user-event';
 import CalculadoraGMF from './CalculadoraGMF';
 
 describe('CalculadoraGMF', () => {
-  it('arranca sin cuenta marcada por defecto', () => {
+  it('arranca sin cuenta marcada', () => {
     render(<CalculadoraGMF />);
 
     expect(screen.getByRole('radio', { name: 'No' })).toBeChecked();
-    expect(screen.getByRole('radio', { name: 'Sí' })).not.toBeChecked();
   });
 
-  it('sin cuenta marcada y movimientos que superan el tope, avisa cuánto se podría ahorrar', async () => {
+  it('el resultado principal es el GMF de la transacción, no una proyección anual', async () => {
     const user = userEvent.setup();
     render(<CalculadoraGMF />);
 
-    // $20.000.000/mes. Valores verificados con Node antes de escribir la prueba.
-    await user.type(screen.getByLabelText(/movimientos.*promedio al mes/i), '20000000');
+    // $500.000 en una transacción sin marcar: GMF = $500.000 * 0,004 = $2.000.
+    await user.type(screen.getByLabelText(/monto de esta transacción/i), '500000');
 
-    expect(await screen.findByText(/podrías ahorrarte/i)).toBeInTheDocument();
-    expect(screen.getByText(/\$\s?879\.883/)).toBeInTheDocument();
+    expect(await screen.findByText('GMF de esta transacción')).toBeInTheDocument();
+    expect(screen.getAllByText(/\$\s?2\.000/).length).toBeGreaterThan(0);
+    // La proyección anual no se muestra a menos que se marque como recurrente.
+    expect(screen.getByRole('checkbox', { name: /repetir este mismo movimiento/i })).not.toBeChecked();
+    expect(screen.queryByText(/en un año pagarías/i)).not.toBeInTheDocument();
+  });
+
+  it('marcar "repetís este movimiento todos los meses" muestra la proyección anual como secundaria', async () => {
+    const user = userEvent.setup();
+    render(<CalculadoraGMF />);
+
+    await user.type(screen.getByLabelText(/monto de esta transacción/i), '20000000');
+    await user.click(screen.getByRole('checkbox', { name: /repetir este mismo movimiento/i }));
+
+    // $20.000.000/mes * 12 = $960.000.000 al 4x1000 = $960.000 al año. Verificado con Node.
+    expect(await screen.findByText(/en un año pagarías/i)).toBeInTheDocument();
+    expect(screen.getByText(/\$\s?960\.000/)).toBeInTheDocument();
+  });
+
+  it('sin cuenta marcada y con excedente sobre el tope, avisa cuánto se podría ahorrar en esa transacción', async () => {
+    const user = userEvent.setup();
+    render(<CalculadoraGMF />);
+
+    // $20.000.000. Ahorro por transacción verificado con Node: $73.323,6.
+    await user.type(screen.getByLabelText(/monto de esta transacción/i), '20000000');
+
+    expect(await screen.findByText(/podrías ahorrarte.*en esta transacción/i)).toBeInTheDocument();
+    expect(screen.getByText(/\$\s?73\.32[34]/)).toBeInTheDocument();
   });
 
   it('con la cuenta marcada, muestra el GMF sobre el excedente en vez del ahorro potencial', async () => {
@@ -27,20 +52,20 @@ describe('CalculadoraGMF', () => {
     render(<CalculadoraGMF />);
 
     await user.click(screen.getByRole('radio', { name: 'Sí' }));
-    await user.type(screen.getByLabelText(/movimientos.*promedio al mes/i), '20000000');
+    await user.type(screen.getByLabelText(/monto de esta transacción/i), '20000000');
 
-    expect(await screen.findByText(/ya aprovechás la exención/i)).toBeInTheDocument();
+    expect(await screen.findByText(/ya aprovechas la exención/i)).toBeInTheDocument();
     expect(screen.queryByText(/podrías ahorrarte/i)).not.toBeInTheDocument();
   });
 
-  it('con la cuenta marcada y movimientos bajo el tope, no paga GMF', async () => {
+  it('con la cuenta marcada y una transacción bajo el tope, no paga GMF', async () => {
     const user = userEvent.setup();
     render(<CalculadoraGMF />);
 
     await user.click(screen.getByRole('radio', { name: 'Sí' }));
-    await user.type(screen.getByLabelText(/movimientos.*promedio al mes/i), '5000000');
+    await user.type(screen.getByLabelText(/monto de esta transacción/i), '5000000');
 
-    expect(await screen.findByText(/no pagás gmf en esta cuenta/i)).toBeInTheDocument();
+    expect(await screen.findByText(/no pagas gmf/i)).toBeInTheDocument();
   });
 
   it('cita la fuente normativa, incluida la Ley 2277 de 2022', () => {

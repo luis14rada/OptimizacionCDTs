@@ -62,7 +62,7 @@ export default function CostoCuentaAhorros() {
           <h2 className="text-2xl font-bold mb-2 text-primary-900 dark:text-primary-100">Comparador de cuentas de ahorro</h2>
           <p className="text-sm text-slate-600 dark:text-slate-300 max-w-3xl">
             En el mismo mes, las cuentas de ahorro en Colombia pagan tasas muy distintas por el mismo riesgo y la misma
-            liquidez. Elegí tu entidad y otra para comparar, y mirá qué tan lejos queda cada una de la inflación.
+            liquidez. Elige tu entidad y otra para comparar, y mira qué tan lejos queda cada una de la inflación.
           </p>
         </div>
 
@@ -94,7 +94,7 @@ export default function CostoCuentaAhorros() {
                 value={tasaActualPct}
                 onChange={e => setTasaActualPct(e.target.value)}
               />
-              <p className="text-xs text-slate-500 dark:text-slate-400">Se autocompleta al elegir la entidad; corregila si conocés la tasa real de tu producto.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Se autocompleta al elegir la entidad; corrígela si conoces la tasa real de tu producto.</p>
             </div>
           </div>
 
@@ -177,7 +177,7 @@ export default function CostoCuentaAhorros() {
                 <p className="text-orange-900 dark:text-orange-200 font-semibold text-lg">Estás perdiendo poder adquisitivo</p>
                 <p className="text-sm text-orange-800 dark:text-orange-300 mt-1">
                   Con la inflación en {formatPorcentaje(INFLACION_ANUAL_REFERENCIA)} (IPC de julio de 2026, DANE), tu retorno real es {formatPorcentaje(resultado.retornoRealActual)}.
-                  Aunque el saldo nominal crece, perdés <span className="font-bold">{formatCurrency(Math.abs(resultado.variacionPoderAdquisitivoActual))}</span> de poder adquisitivo al año.
+                  Aunque el saldo nominal crece, pierdes <span className="font-bold">{formatCurrency(Math.abs(resultado.variacionPoderAdquisitivoActual))}</span> de poder adquisitivo al año.
                 </p>
               </div>
             </div>
@@ -188,7 +188,7 @@ export default function CostoCuentaAhorros() {
                 <p className="text-green-900 dark:text-green-200 font-semibold text-lg">Tu plata gana poder adquisitivo</p>
                 <p className="text-sm text-green-800 dark:text-green-300 mt-1">
                   Con la inflación en {formatPorcentaje(INFLACION_ANUAL_REFERENCIA)} (IPC de julio de 2026, DANE), tu retorno real es {formatPorcentaje(resultado.retornoRealActual)}:
-                  ganás <span className="font-bold">{formatCurrency(resultado.variacionPoderAdquisitivoActual)}</span> al año en términos reales.
+                  ganas <span className="font-bold">{formatCurrency(resultado.variacionPoderAdquisitivoActual)}</span> al año en términos reales.
                 </p>
               </div>
             </div>
@@ -223,7 +223,7 @@ export default function CostoCuentaAhorros() {
         <p className="text-xs text-slate-500 dark:text-slate-400">
           Fuente: <a href={FUENTE_TASAS_URL} target="_blank" rel="noreferrer" className="underline">{FUENTE_TASAS}</a>, corte {formatFecha(FECHA_CORTE_TASAS)}.
           Inflación de referencia: {formatPorcentaje(INFLACION_ANUAL_REFERENCIA)} (IPC, DANE), corte {formatFecha(FECHA_CORTE_INFLACION)}.
-          Esta tabla informa y compara tasas públicas; no es una recomendación de dónde poner tu plata — validá siempre la tasa vigente directamente con la entidad.
+          Esta tabla informa y compara tasas públicas; no es una recomendación de dónde poner tu plata — valida siempre la tasa vigente directamente con la entidad.
         </p>
       </section>
     </div>

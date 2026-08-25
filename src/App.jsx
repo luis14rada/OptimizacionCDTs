@@ -28,7 +28,7 @@ const TABS = [
     id: 'ahorros',
     etiqueta: 'Cuenta de ahorros',
     titulo: '¿Cuánto te cuesta tu cuenta de ahorros?',
-    descripcion: 'Compará la tasa de tu cuenta contra otras del mercado colombiano y contra la inflación, para saber si tu plata gana o pierde poder adquisitivo real.'
+    descripcion: 'Compara la tasa de tu cuenta contra otras del mercado colombiano y contra la inflación, para saber si tu plata gana o pierde poder adquisitivo real.'
   },
   {
     id: 'cadena-rentabilidad',
@@ -40,37 +40,37 @@ const TABS = [
     id: 'declarar-renta',
     etiqueta: '¿Declaro renta?',
     titulo: '¿Me toca declarar renta?',
-    descripcion: 'Revisá los cinco topes del Estatuto Tributario para saber si quedás obligado a declarar renta este año.'
+    descripcion: 'Revisa los cinco topes del Estatuto Tributario para saber si quedas obligado a declarar renta este año.'
   },
   {
     id: 'gmf',
     etiqueta: '4×1000',
-    titulo: '4×1000: cuánto pagás y cómo dejar de pagarlo',
-    descripcion: 'Calculá cuánto te cobra el Gravamen a los Movimientos Financieros y cuánto ahorrarías marcando una cuenta como exenta.'
+    titulo: '4×1000: cuánto pagas y cómo dejar de pagarlo',
+    descripcion: 'Calcula cuánto te cobra el Gravamen a los Movimientos Financieros y cuánto ahorrarías marcando una cuenta como exenta.'
   },
   {
     id: 'fogafin',
     etiqueta: 'Escalera Fogafín',
     titulo: 'Escalera de CDTs y cobertura Fogafín',
-    descripcion: 'Repartí tu plata entre entidades para que el seguro de depósitos cubra todo lo que tenés invertido.'
+    descripcion: 'Reparte tu plata entre entidades para que el seguro de depósitos cubra todo lo que tienes invertido.'
   },
   {
     id: 'costo-deuda',
     etiqueta: 'Costo de tu deuda',
     titulo: 'El costo real de tu deuda',
-    descripcion: 'Compará la tasa que te cobran contra la tasa de usura y descubrí si estás pagando de más -- o algo ilegal.'
+    descripcion: 'Compara la tasa que te cobran contra la tasa de usura y descubre si estás pagando de más -- o algo ilegal.'
   },
   {
     id: 'cuota-manejo',
     etiqueta: 'Costo de tu cuenta',
     titulo: 'Costo total de tener una cuenta',
-    descripcion: 'Sumá lo que te cobra tu banco por cuota de manejo y tarjeta débito, y mirá cuánto es al año.'
+    descripcion: 'Suma lo que te cobra tu banco por cuota de manejo y tarjeta débito, y mira cuánto es al año.'
   },
   {
     id: 'fondo-emergencia',
     etiqueta: 'Fondo de emergencia',
     titulo: 'Fondo de emergencia',
-    descripcion: 'Calculá cuánto necesitás ahorrado para cubrir varios meses de gastos si algo imprevisto pasa.'
+    descripcion: 'Calcula cuánto necesitas ahorrado para cubrir varios meses de gastos si algo imprevisto pasa.'
   }
 ];
 

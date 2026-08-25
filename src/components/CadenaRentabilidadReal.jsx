@@ -33,8 +33,8 @@ export default function CadenaRentabilidadReal() {
           <h2 className="text-2xl font-bold mb-2 text-primary-900 dark:text-primary-100">Rentabilidad real: la cadena completa</h2>
           <p className="text-sm text-slate-600 dark:text-slate-300 max-w-3xl">
             La tasa que anuncia cualquier producto (CDT, fondo, cuenta) no es lo que realmente te queda. Primero se
-            descuenta la retención en la fuente, y lo que sobra se lo come la inflación. Ingresá la tasa nominal de
-            cualquier producto y mirá cada eslabón de la cadena.
+            descuenta la retención en la fuente, y lo que sobra se lo come la inflación. Ingresa la tasa nominal de
+            cualquier producto y mira cada eslabón de la cadena.
           </p>
         </div>
 
@@ -122,7 +122,7 @@ export default function CadenaRentabilidadReal() {
                   – Inflación ({formatPorcentaje(INFLACION_ANUAL_REFERENCIA)}) = Retorno real
                 </p>
                 <p className={`text-xs ${pierdePoderAdquisitivo ? 'text-orange-800 dark:text-orange-300' : 'text-green-800 dark:text-green-300'}`}>
-                  Lo que de verdad ganás en poder adquisitivo
+                  Lo que de verdad ganas en poder adquisitivo
                 </p>
               </div>
               <div className="text-right">
@@ -160,7 +160,7 @@ export default function CadenaRentabilidadReal() {
       <section className="glass-card p-6 md:p-8">
         <p className="text-xs text-slate-500 dark:text-slate-400">
           Inflación de referencia: {formatPorcentaje(INFLACION_ANUAL_REFERENCIA)} (IPC, DANE), corte {formatFecha(FECHA_CORTE_INFLACION)}.
-          La retención en la fuente sobre rendimientos financieros varía según tu situación tributaria — validá la tarifa
+          La retención en la fuente sobre rendimientos financieros varía según tu situación tributaria — valida la tarifa
           que te aplica con tu contador. Esta herramienta informa y compara; no es una recomendación de inversión.
         </p>
       </section>

@@ -355,7 +355,7 @@ export default function CDTSimulator() {
         {rawCdts.length === 0 && (
           <div className="mb-6 p-4 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-xl flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
             <p className="text-sm text-primary-900 dark:text-primary-200">
-              ¿Primera vez acá? Cargá un caso de ejemplo y mirá cómo funciona en tres segundos, sin escribir nada.
+              ¿Primera vez acá? Carga un caso de ejemplo y mira cómo funciona en tres segundos, sin escribir nada.
             </p>
             <button type="button" onClick={cargarEjemplo} className="btn-secondary whitespace-nowrap">
               Ver un caso de ejemplo

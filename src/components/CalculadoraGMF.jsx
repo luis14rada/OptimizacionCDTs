@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { calcularGMFMensual, calcularAhorroPorMarcarCuenta } from '../GMFEngine';
+import { calcularGMFTransaccion, calcularAhorroPorMarcarCuenta } from '../GMFEngine';
 import { TARIFA_GMF, TOPE_EXENTO_MENSUAL_UVT, UVT_GMF, FUENTE_GMF } from '../parametrosGMF';
 import Campo from './Campo';
 
@@ -7,48 +7,49 @@ const formatCurrency = (value) => new Intl.NumberFormat('es-CO', { style: 'curre
 const formatPorcentajeGMF = (tarifa) => `${(tarifa * 1000).toFixed(0)}x1000`;
 
 export default function CalculadoraGMF() {
-  const [movimiento, setMovimiento] = useState('');
+  const [monto, setMonto] = useState('');
   const [cuentaMarcada, setCuentaMarcada] = useState(false);
+  const [esRecurrente, setEsRecurrente] = useState(false);
   const [supuestos, setSupuestos] = useState({ tarifa: TARIFA_GMF, topeExentoUvt: TOPE_EXENTO_MENSUAL_UVT, uvt: UVT_GMF });
   const [ajustarAbierto, setAjustarAbierto] = useState(false);
 
   const cambiarSupuesto = (clave, v) => setSupuestos(prev => ({ ...prev, [clave]: v }));
 
-  const movimientoNum = parseFloat(movimiento) || 0;
-  const hayMovimiento = movimientoNum > 0;
+  const montoNum = parseFloat(monto) || 0;
+  const hayMonto = montoNum > 0;
 
-  const actual = hayMovimiento ? calcularGMFMensual({ movimientoMensual: movimientoNum, cuentaMarcada, ...supuestos }) : null;
-  const comparacion = hayMovimiento ? calcularAhorroPorMarcarCuenta({ movimientoMensual: movimientoNum, ...supuestos }) : null;
+  const actual = hayMonto ? calcularGMFTransaccion({ montoTransaccion: montoNum, cuentaMarcada, ...supuestos }) : null;
+  const comparacion = hayMonto ? calcularAhorroPorMarcarCuenta({ montoTransaccion: montoNum, ...supuestos }) : null;
 
   return (
     <div className="space-y-8">
       <section className="glass-card p-6 md:p-8 space-y-6">
         <div>
-          <h2 className="text-2xl font-bold mb-2 text-primary-900 dark:text-primary-100">4×1000: cuánto pagás y cómo dejar de pagarlo</h2>
+          <h2 className="text-2xl font-bold mb-2 text-primary-900 dark:text-primary-100">4×1000: cuánto pagas y cómo dejar de pagarlo</h2>
           <p className="text-sm text-slate-600 dark:text-slate-300 max-w-3xl">
             El Gravamen a los Movimientos Financieros ({formatPorcentajeGMF(supuestos.tarifa)}) se cobra sobre cada retiro
-            o pago que hacés desde tus cuentas. Marcar una cuenta como exenta ante tu banco te libra de pagarlo sobre los
+            o pago que haces desde tus cuentas. Marcar una cuenta como exenta ante tu banco te libra de pagarlo sobre los
             primeros {supuestos.topeExentoUvt} UVT que muevas cada mes en esa cuenta.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label htmlFor="movimiento-mensual" className="text-sm font-semibold">Movimientos (retiros/pagos) promedio al mes</label>
+            <label htmlFor="monto-transaccion" className="text-sm font-semibold">Monto de esta transacción (retiro o pago)</label>
             <input
-              id="movimiento-mensual"
+              id="monto-transaccion"
               type="number"
               min="0"
               step="10000"
               className="glass-input"
-              value={movimiento}
-              onChange={e => setMovimiento(e.target.value)}
-              placeholder="Ej: 8000000"
+              value={monto}
+              onChange={e => setMonto(e.target.value)}
+              placeholder="Ej: 500000"
             />
           </div>
 
           <div className="space-y-2">
-            <span className="text-sm font-semibold block">¿Ya tenés una cuenta marcada como exenta?</span>
+            <span className="text-sm font-semibold block">¿Esa cuenta ya está marcada como exenta?</span>
             <div className="flex gap-4 pt-2">
               <label className="flex items-center gap-2 text-sm">
                 <input type="radio" name="cuenta-marcada" checked={cuentaMarcada === true} onChange={() => setCuentaMarcada(true)} />
@@ -65,13 +66,13 @@ export default function CalculadoraGMF() {
 
       {actual && comparacion && (
         <section className="glass-card p-6 md:p-8 space-y-4">
-          <h3 className="text-xl font-bold text-primary-900 dark:text-primary-100">Con {formatCurrency(movimientoNum)} al mes</h3>
+          <h3 className="text-xl font-bold text-primary-900 dark:text-primary-100">GMF de esta transacción</h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-              <p className="text-slate-500 dark:text-slate-400">GMF que pagás hoy ({cuentaMarcada ? 'cuenta marcada' : 'sin marcar'})</p>
-              <p className="text-lg font-bold text-slate-800 dark:text-slate-100">{formatCurrency(actual.gmfMensual * 12)}/año</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{formatCurrency(actual.gmfMensual)}/mes</p>
+              <p className="text-slate-500 dark:text-slate-400">Pagas en esta transacción ({cuentaMarcada ? 'cuenta marcada' : 'sin marcar'})</p>
+              <p className="text-lg font-bold text-slate-800 dark:text-slate-100">{formatCurrency(actual.gmfTransaccion)}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Sobre {formatCurrency(montoNum)}</p>
             </div>
             <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50">
               <p className="text-slate-500 dark:text-slate-400">Tope exento mensual (una cuenta marcada)</p>
@@ -80,16 +81,16 @@ export default function CalculadoraGMF() {
             </div>
           </div>
 
-          {!cuentaMarcada && comparacion.ahorroAnual > 0 && (
+          {!cuentaMarcada && comparacion.ahorroTransaccion > 0 && (
             <div className="p-4 bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded-xl flex gap-3 items-start">
               <span className="text-xl" aria-hidden="true">⚠️</span>
               <div>
-                <p className="text-orange-900 dark:text-orange-200 font-semibold text-lg">Podrías ahorrarte {formatCurrency(comparacion.ahorroAnual)} al año</p>
+                <p className="text-orange-900 dark:text-orange-200 font-semibold text-lg">Podrías ahorrarte {formatCurrency(comparacion.ahorroTransaccion)} en esta transacción</p>
                 <p className="text-sm text-orange-800 dark:text-orange-300 mt-1">
-                  Pedile a tu banco que marque una cuenta como exenta de GMF -- normalmente es un trámite gratuito y
+                  Pídele a tu banco que marque una cuenta como exenta de GMF -- normalmente es un trámite gratuito y
                   rápido. Aunque la ley ordenó automatizar esta exención entre todas tus cuentas desde diciembre de
-                  2024, esa automatización todavía no está plenamente implementada: en la práctica, seguís necesitando
-                  marcar la cuenta vos mismo.
+                  2024, esa automatización todavía no está plenamente implementada: en la práctica, sigues necesitando
+                  marcar la cuenta tú mismo.
                 </p>
               </div>
             </div>
@@ -99,12 +100,29 @@ export default function CalculadoraGMF() {
             <div className="p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-xl flex gap-3 items-start">
               <span className="text-xl" aria-hidden="true">✅</span>
               <p className="text-sm text-green-800 dark:text-green-300">
-                Ya aprovechás la exención. {comparacion.gmfAnualMarcada > 0
-                  ? `Como tus movimientos superan el tope mensual, igual pagás GMF sobre el excedente: ${formatCurrency(comparacion.gmfAnualMarcada)} al año.`
-                  : 'Tus movimientos no superan el tope mensual, así que no pagás GMF en esta cuenta.'}
+                Ya aprovechas la exención. {comparacion.gmfTransaccionMarcada > 0
+                  ? `Como esta transacción supera el tope mensual, igual pagas GMF sobre el excedente: ${formatCurrency(comparacion.gmfTransaccionMarcada)}.`
+                  : 'Si esta es tu única transacción del mes en esta cuenta, no pagas GMF.'}
+                {' '}El tope es acumulado por mes: si ya moviste plata antes en esta cuenta este mes, el resultado real
+                puede ser distinto.
               </p>
             </div>
           )}
+
+          <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+            <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+              <input type="checkbox" checked={esRecurrente} onChange={e => setEsRecurrente(e.target.checked)} />
+              ¿Vas a repetir este mismo movimiento todos los meses?
+            </label>
+
+            {esRecurrente && (
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                Si lo repites todos los meses, en un año pagarías {formatCurrency(cuentaMarcada ? comparacion.gmfAnualMarcada : comparacion.gmfAnualSinMarcar)}{' '}
+                ({formatCurrency(actual.gmfTransaccion)}/mes) -- es una proyección, no una obligación: si dejas de hacer
+                la transacción, ese costo tampoco se sostiene.
+              </p>
+            )}
+          </div>
         </section>
       )}
 
@@ -149,7 +167,7 @@ export default function CalculadoraGMF() {
 
       <section className="glass-card p-6 md:p-8">
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          Fuente: {FUENTE_GMF} Esta herramienta informa y compara; no es asesoría tributaria. Confirmá siempre con tu
+          Fuente: {FUENTE_GMF} Esta herramienta informa y compara; no es asesoría tributaria. Confirma siempre con tu
           banco si tu cuenta ya está marcada como exenta.
         </p>
       </section>

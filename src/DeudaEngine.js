@@ -1,6 +1,6 @@
 /**
  * Motor del costo real de una deuda: clasifica la tasa que te cobran contra
- * la tasa de usura (art. 884 C. Co. y art. 305 C.P.) y calcula cuánto pagás
+ * la tasa de usura (art. 884 C. Co. y art. 305 C.P.) y calcula cuánto pagas
  * de más frente al tope legal.
  */
 
