@@ -34,5 +34,8 @@ dist-ssr
 # Reportes de cobertura de pruebas
 coverage
 
+# Generado en cada build por scripts/generar-sitemap.js a partir de src/rutas.js
+public/sitemap.xml
+
 # Carpeta temporal de archivos pendientes de borrar
 _to_delete
