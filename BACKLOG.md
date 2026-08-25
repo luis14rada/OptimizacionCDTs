@@ -4,7 +4,7 @@ Estado a 24 de agosto de 2026. Salió de una auditoría del código y de dos
 investigaciones sobre el mercado colombiano. La versión con el detalle completo
 de cada propuesta está en el documento de ruta compartido aparte.
 
-**Ya desplegado en producción** (commit `48cea9b`): los tres errores de cálculo,
+**Ya desplegado en producción** (commit `b3e9b65`): los tres errores de cálculo,
 los parámetros configurables, la persistencia, la comparación de escenarios A/B,
 la carga inicial reducida de 877 KB a 263 KB, la tipografía Inter, el focus trap
 del modal de aviso legal, las pruebas de `pdfExport.js` y `PortfolioChart.jsx`,
@@ -50,6 +50,34 @@ rebrand que las acompaña:
   reales — confirma el dolor que documentaba esta sección del backlog.
 
 Suite en 125 pruebas.
+
+Después de eso, ya desplegadas también las pestañas 3 a 5 y 7, 9 y 10 (ver la
+tabla de "Hacia dónde puede crecer" más abajo para el detalle de cada una), y
+dos cambios transversales:
+
+- **SEO — URL propia por herramienta.** Antes las 9 pestañas vivían todas en
+  la misma dirección (`https://optimizacioncdts.vercel.app/`), cambiando por
+  estado de React -- Google no tenía nada específico que indexar para, por
+  ejemplo, "calculadora 4x1000". Se agregó `react-router-dom`: cada pestaña
+  tiene ahora su propia URL (`/calculadora-4x1000`, `/tasa-de-usura`, etc.),
+  su propio `<title>`/meta description/canonical (`useDocumentMeta.js`) y su
+  bloque JSON-LD (`SoftwareApplication`, sin inventar rating). `src/rutas.js`
+  es la fuente única de verdad para el routing, los meta tags y el
+  `sitemap.xml` (se regenera en cada build, no vive en git). Se agregó
+  `robots.txt` y la barra de pestañas pasó de `role="tablist"` al patrón de
+  navegación real (`<nav>`/`<Link>`/`aria-current`), correcto ahora que cada
+  una es una página de verdad. **26 de agosto de 2026: Luis verificó el
+  dominio en Google Search Console y envió el sitemap** -- el único paso de
+  todo esto que no podía hacer código, ya está cerrado.
+- Corrección de un error de diseño en la calculadora de 4×1000: el resultado
+  principal pasó de una proyección mensual/anual (que asumía que la persona
+  iba a repetir la transacción todos los meses, algo que no se puede
+  garantizar) al costo de la transacción puntual que se ingresa, con la
+  proyección mensual/anual como dato secundario y opcional. De paso, se
+  corrigió voseo ("pagás", "pedile", "vos") a tuteo colombiano en toda la
+  interfaz -- se había colado en todo lo escrito en las últimas rondas.
+
+Suite en 202 pruebas.
 
 **Auditado el 24 de agosto de 2026, sin cambios de código necesarios**:
 contraste de color en modo oscuro. Se midieron las 13 combinaciones de texto
