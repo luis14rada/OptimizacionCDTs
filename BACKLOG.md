@@ -86,34 +86,39 @@ quedaron todos resueltos — el favicon fue el último.
 de `App.jsx`/`useTheme.js` sin pruebas (sección "En pausa" más abajo) sigue
 pospuesto hasta que Luis decida cerrarlo del todo. Doce propuestas
 priorizadas por dolor documentado × facilidad de cálculo × frecuencia. Cada una
-salió de investigar cifras reales del mercado colombiano, no de intuición — por
-eso el orden interno de esta tabla no se tocó al reordenar el resto del backlog.
+salió de investigar cifras reales del mercado colombiano, no de intuición.
 
-**El hallazgo que ordena la lista:** la app resuelve un problema real pero de nicho.
-En el mismo mes, las cuentas de ahorro colombianas rinden entre **0,07% y 10% anual**
-— 143 veces de diferencia con el mismo riesgo y la misma liquidez. Con la inflación en
-6,03%, quien tiene $10 millones en la cuenta equivocada pierde **$572.000 de poder
-adquisitivo al año** sin enterarse. Y el 82,4% de los adultos tiene cuenta de ahorros,
-contra el 1–2% que invierte en bolsa.
+**Reordenado el 25 de agosto de 2026 a pedido de Luis**: la propuesta "Calculadora
+UGPP con presunción de costos" pasó del puesto 3 al final de la lista y queda **fuera
+del flujo de trabajo activo** hasta que se pida explícitamente retomarla -- no se
+desarrolla por ahora. El resto de la tabla conserva su orden original.
+
+**El hallazgo que ordenó la lista originalmente:** la app resuelve un problema real
+pero de nicho. En el mismo mes, las cuentas de ahorro colombianas rinden entre
+**0,07% y 10% anual** — 143 veces de diferencia con el mismo riesgo y la misma
+liquidez. Con la inflación en 6,03%, quien tiene $10 millones en la cuenta equivocada
+pierde **$572.000 de poder adquisitivo al año** sin enterarse. Y el 82,4% de los
+adultos tiene cuenta de ahorros, contra el 1–2% que invierte en bolsa.
 
 | # | Pestaña | Dolor que resuelve |
 |---|---|---|
 | 1 | ¿Cuánto te cuesta tu cuenta de ahorros? **(resuelto)** | 143× de diferencia entre la peor y la mejor cuenta |
 | 2 | Rentabilidad real: la cadena completa **(resuelto)** | La ganancia real es menos de la mitad de la nominal |
-| 3 | Calculadora UGPP con presunción de costos | 8,3 M de trabajadores por cuenta propia; deducción de 27,5%–82,3% que casi nadie usa |
-| 4 | ¿Me toca declarar renta? | Sanción mínima de $523.740 aunque declares un día tarde |
-| 5 | 4×1000: cuánto pagas y cómo dejar de pagarlo | $240.000/año evitables con un solo trámite |
-| 6 | Escalera de CDTs y cobertura Fogafín | El seguro cubre $50 M por entidad; nadie ayuda a repartir |
-| 7 | Qué hacer con la prima y las cesantías | 79% se arrepiente de cómo gastó su prima |
-| 8 | El costo real de tu deuda | Usura al 29,66%; gota a gota al 382% |
-| 9 | Detector de pirámides | 262.000 víctimas, $4,2 billones perdidos |
-| 10 | Costo total de tener una cuenta | Cuota de manejo de $0 a $44.030/mes |
-| 11 | Fondo de emergencia | Solo 1 de cada 5 cubre un imprevisto |
-| 12 | Herencias y ganancia ocasional | Exenciones mal aplicadas de $85 M a $680 M |
+| 3 | ¿Me toca declarar renta? **(en desarrollo)** | Sanción mínima de $523.740 aunque declares un día tarde |
+| 4 | 4×1000: cuánto pagas y cómo dejar de pagarlo **(en desarrollo)** | $240.000/año evitables con un solo trámite |
+| 5 | Escalera de CDTs y cobertura Fogafín **(en desarrollo)** | El seguro cubre $50 M por entidad; nadie ayuda a repartir |
+| 6 | Qué hacer con la prima y las cesantías | 79% se arrepiente de cómo gastó su prima |
+| 7 | El costo real de tu deuda | Usura al 29,66%; gota a gota al 382% |
+| 8 | Detector de pirámides | 262.000 víctimas, $4,2 billones perdidos |
+| 9 | Costo total de tener una cuenta | Cuota de manejo de $0 a $44.030/mes |
+| 10 | Fondo de emergencia | Solo 1 de cada 5 cubre un imprevisto |
+| 11 | Herencias y ganancia ocasional | Exenciones mal aplicadas de $85 M a $680 M |
+| 12 | Calculadora UGPP con presunción de costos **(en pausa, no desarrollar salvo pedido explícito)** | 8,3 M de trabajadores por cuenta propia; deducción de 27,5%–82,3% que casi nadie usa |
 
-**Propuestas 1 y 2 ya resueltas** (ver arriba). Al retomar esta sección, la
-propuesta 3 ("Calculadora UGPP con presunción de costos") sigue en el orden
-original de la tabla.
+**Propuestas 1 y 2 ya resueltas** (ver arriba). Las propuestas 3, 4 y 5 (¿Me toca
+declarar renta?, 4×1000, Escalera de CDTs y cobertura Fogafín) se están resolviendo
+en bundle -- ver la nota de investigación legal más abajo. Al retomar esta sección
+después, la propuesta 6 ("Qué hacer con la prima y las cesantías") sigue el orden.
 
 **Nota de investigación de la propuesta 1, por si sirve para las siguientes:** de
 las tasas de ahorro investigadas, solo quedaron en `src/tasasAhorro.js` las 10
@@ -123,6 +128,33 @@ bancos fue la tasa promocional de un producto puntual, no el promedio comparable
 con el resto — mezclar esas dos metodologías habría hecho la tabla engañosa. Si
 alguna propuesta futura necesita datos de mercado, vale la pena aplicar el mismo
 criterio: una sola fuente, una sola metodología, por tabla.
+
+**Nota de investigación legal de las propuestas 3, 4 y 5 (25 de agosto de 2026):**
+cada pestaña cita su norma exacta y usa parámetros configurables (patrón
+`CONSTANTES_POR_ANIO` de `src/parametros.js`), para poder simular si la ley cambia.
+
+- **¿Me toca declarar renta?**: los 5 topes del art. 592-593 ET (reglamentado por
+  el Decreto 1625 de 2016), evaluados con la UVT 2025 ($49.799, Resolución DIAN
+  000193 de 2024) por ser el año gravable que se declara en 2026. La sanción mínima
+  (art. 639 ET, 10 UVT) usa la UVT 2026 ($52.374, Resolución DIAN 000238 de 2025) por
+  ser el año en que se presenta -- de ahí sale exacto el $523.740 que ya citaba esta
+  tabla.
+- **4×1000**: tarifa permanente desde la Ley 1819 de 2016 (art. 872 ET) -- esa ley
+  derogó el cronograma de desmonte gradual que había fijado la Ley 1739 de 2014 (que
+  preveía llegar a 0% en 2022). Varias fuentes online, **incluida una página de la
+  propia DIAN**, todavía reproducen ese cronograma viejo como si estuviera vigente;
+  se verificó cruzando varias fuentes independientes fechadas en 2026 que la tarifa
+  sigue siendo 4x1000. La exención de 350 UVT/mes en una cuenta marcada (art. 879
+  numeral 1 ET) sigue exigiendo el trámite manual con el banco en 2026: la
+  automatización entre todas las cuentas de una persona que ordenó la Ley 2277 de
+  2022 (art. 881-1 ET) desde el 13 de diciembre de 2024 todavía no está plenamente
+  implementada.
+- **Escalera de CDTs y cobertura Fogafín**: $50.000.000 por depositante, por entidad,
+  fijados por la Resolución 002 de 2017 de la Junta Directiva de Fogafín (subió de
+  $20.000.000, vigente desde abril de 2017). Esa resolución adoptó una revisión cada
+  3 años basada en inflación -- no se encontró evidencia de un cambio de monto desde
+  entonces (fuentes verificadas hasta junio de 2026), pero como la política de
+  revisión existe, vale la pena reconfirmar el monto cada cierto tiempo.
 
 ### Límites que aplican a todas
 

@@ -5,6 +5,7 @@ import {
   SITUACIONES_LABORALES,
   parametrosPorDefecto
 } from '../parametros';
+import Campo from './Campo';
 
 const porcentaje = (v) => `${(v * 100).toFixed(2).replace(/\.?0+$/, '')}%`;
 const moneda = (v) => new Intl.NumberFormat('es-CO', {
@@ -12,16 +13,6 @@ const moneda = (v) => new Intl.NumberFormat('es-CO', {
 }).format(v);
 
 const ANIOS_DISPONIBLES = Object.keys(CONSTANTES_POR_ANIO).map(Number).sort((a, b) => b - a);
-
-function Campo({ etiqueta, ayuda, htmlFor, children }) {
-  return (
-    <div className="space-y-1.5">
-      <label htmlFor={htmlFor} className="text-sm font-semibold block">{etiqueta}</label>
-      {children}
-      {ayuda && <p className="text-xs text-slate-500 dark:text-slate-400">{ayuda}</p>}
-    </div>
-  );
-}
 
 export default function ParametrosPanel({ parametros, onCambiar, onRestaurar }) {
   const [abierto, setAbierto] = useState(false);

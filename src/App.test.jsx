@@ -72,4 +72,34 @@ describe('App', () => {
     expect(screen.queryByRole('heading', { name: /simulador.*optimizador de cdt/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /cuánto te cuesta tu cuenta de ahorros/i })).not.toBeInTheDocument();
   });
+
+  it('cambiar a la pestaña "¿Declaro renta?" muestra ese simulador', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await aceptarAviso(user);
+
+    await user.click(screen.getByRole('tab', { name: /¿declaro renta\?/i }));
+
+    expect(screen.getByRole('heading', { level: 1, name: /¿me toca declarar renta\?/i })).toBeInTheDocument();
+  });
+
+  it('cambiar a la pestaña "4×1000" muestra esa calculadora', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await aceptarAviso(user);
+
+    await user.click(screen.getByRole('tab', { name: /4×1000/i }));
+
+    expect(screen.getByRole('heading', { level: 1, name: /4×1000: cuánto pagás y cómo dejar de pagarlo/i })).toBeInTheDocument();
+  });
+
+  it('cambiar a la pestaña "Escalera Fogafín" muestra esa herramienta', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await aceptarAviso(user);
+
+    await user.click(screen.getByRole('tab', { name: /escalera fogafín/i }));
+
+    expect(screen.getByRole('heading', { level: 1, name: /escalera de cdts y cobertura fogafín/i })).toBeInTheDocument();
+  });
 });
