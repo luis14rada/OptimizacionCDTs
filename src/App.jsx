@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import CDTSimulator from './components/CDTSimulator';
 import CostoCuentaAhorros from './components/CostoCuentaAhorros';
 import CadenaRentabilidadReal from './components/CadenaRentabilidadReal';
+import DeclararRenta from './components/DeclararRenta';
+import CalculadoraGMF from './components/CalculadoraGMF';
+import EscaleraCDTsFogafin from './components/EscaleraCDTsFogafin';
 import DisclaimerModal from './components/DisclaimerModal';
 import ThemeToggle from './components/ThemeToggle';
 import useTheme from './hooks/useTheme';
@@ -29,6 +32,24 @@ const TABS = [
     etiqueta: 'Rentabilidad real',
     titulo: 'Rentabilidad real: la cadena completa',
     descripcion: 'De la tasa nominal que anuncia cualquier producto hasta lo que realmente queda después de la retención en la fuente y la inflación.'
+  },
+  {
+    id: 'declarar-renta',
+    etiqueta: '¿Declaro renta?',
+    titulo: '¿Me toca declarar renta?',
+    descripcion: 'Revisá los cinco topes del Estatuto Tributario para saber si quedás obligado a declarar renta este año.'
+  },
+  {
+    id: 'gmf',
+    etiqueta: '4×1000',
+    titulo: '4×1000: cuánto pagás y cómo dejar de pagarlo',
+    descripcion: 'Calculá cuánto te cobra el Gravamen a los Movimientos Financieros y cuánto ahorrarías marcando una cuenta como exenta.'
+  },
+  {
+    id: 'fogafin',
+    etiqueta: 'Escalera Fogafín',
+    titulo: 'Escalera de CDTs y cobertura Fogafín',
+    descripcion: 'Repartí tu plata entre entidades para que el seguro de depósitos cubra todo lo que tenés invertido.'
   }
 ];
 
@@ -89,6 +110,9 @@ function App() {
           {tabActiva === 'cdts' && <CDTSimulator />}
           {tabActiva === 'ahorros' && <CostoCuentaAhorros />}
           {tabActiva === 'cadena-rentabilidad' && <CadenaRentabilidadReal />}
+          {tabActiva === 'declarar-renta' && <DeclararRenta />}
+          {tabActiva === 'gmf' && <CalculadoraGMF />}
+          {tabActiva === 'fogafin' && <EscaleraCDTsFogafin />}
         </main>
 
         {/* Footer */}
