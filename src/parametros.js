@@ -37,6 +37,41 @@ export const CONSTANTES_POR_ANIO = {
 export const ANIO_POR_DEFECTO = 2026;
 
 /**
+ * Sobre qué ingreso se mide el umbral que obliga a cotizar seguridad social.
+ *
+ * El artículo 89 de la Ley 2277 de 2022 obliga a quien tenga "ingresos NETOS
+ * mensuales iguales o superiores a un (1) salario mínimo legal mensual
+ * vigente" -- netos, o sea después de restar los costos (los presuntos del
+ * 27,5% o los reales del art. 107 ET). La UGPP lo confirma en su ABC para
+ * rentistas de capital.
+ *
+ * La diferencia no es menor: con el SMMLV de 2026 y 27,5% de costos, medir
+ * sobre el neto mueve el umbral de $1.750.905 a un bruto equivalente de
+ * $2.415.041. Se deja configurable porque es una interpretación de norma, no
+ * una constante: quien prefiera el criterio conservador (o cuyo contador lo
+ * lea distinto) puede medirlo sobre el bruto.
+ */
+export const FUENTE_UMBRAL = {
+  norma: 'Artículo 89 de la Ley 2277 de 2022',
+  cita: 'ingresos netos mensuales iguales o superiores a un (1) salario mínimo legal mensual vigente',
+  urlLey: 'http://secretariasenado.gov.co/senado/basedoc/ley_2277_2022_pr002.html',
+  urlUgpp: 'https://www.ugpp.gov.co/abc_rentistas_capital/'
+};
+
+export const OPCIONES_BASE_UMBRAL = [
+  {
+    valor: true,
+    etiqueta: 'Ingreso neto (según la ley)',
+    descripcion: 'Resta los costos antes de comparar contra 1 SMMLV, como exige el art. 89 de la Ley 2277 de 2022.'
+  },
+  {
+    valor: false,
+    etiqueta: 'Ingreso bruto (más conservador)',
+    descripcion: 'Compara el interés sin restar costos. Activa la obligación antes, así que el tope de inversión queda más bajo.'
+  }
+];
+
+/**
  * Opciones de retención en la fuente sobre rendimientos financieros.
  * El valor por defecto es 4%; quien no está obligado a declarar suele tener 7%.
  */
@@ -108,6 +143,9 @@ export const parametrosPorDefecto = (anio = ANIO_POR_DEFECTO) => {
 
     situacionLaboral: SITUACION_POR_DEFECTO,
     ibcYaCotizado: 0,
+
+    // Por defecto se sigue la ley (neto). Ver FUENTE_UMBRAL más arriba.
+    umbralSobreIngresoNeto: true,
 
     // Desactivado por defecto: es un beneficio real pero su porcentaje cambia
     // cada año y para el año en curso todavía no existe decreto.

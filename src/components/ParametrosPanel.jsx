@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import {
   CONSTANTES_POR_ANIO,
   OPCIONES_RETENCION,
+  OPCIONES_BASE_UMBRAL,
+  FUENTE_UMBRAL,
   SITUACIONES_LABORALES,
   parametrosPorDefecto
 } from '../parametros';
@@ -31,7 +33,10 @@ export default function ParametrosPanel({ parametros, onCambiar, onRestaurar }) 
       ...base,
       retencion: parametros.retencion,
       situacionLaboral: parametros.situacionLaboral,
-      ibcYaCotizado: parametros.ibcYaCotizado
+      ibcYaCotizado: parametros.ibcYaCotizado,
+      // Es una interpretación de norma elegida por la persona, no una
+      // constante del año: no se pisa al cambiar de año gravable.
+      umbralSobreIngresoNeto: parametros.umbralSobreIngresoNeto
     });
   };
 
@@ -50,6 +55,7 @@ export default function ParametrosPanel({ parametros, onCambiar, onRestaurar }) 
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
             {parametros.anioGravable} · Retención {porcentaje(parametros.retencion)} · {situacion.etiqueta}
+            {parametros.umbralSobreIngresoNeto === false && ' · Umbral sobre bruto'}
             {parametros.componenteInflacionarioActivo && ' · Comp. inflacionario activo'}
           </p>
         </div>
@@ -122,6 +128,32 @@ export default function ParametrosPanel({ parametros, onCambiar, onRestaurar }) 
                   <option key={clave} value={clave}>{s.etiqueta}</option>
                 ))}
               </select>
+            </Campo>
+
+            <Campo
+              etiqueta="El umbral de 1 SMMLV se mide sobre"
+              htmlFor="param-base-umbral"
+              ayuda={OPCIONES_BASE_UMBRAL.find(o => o.valor === (parametros.umbralSobreIngresoNeto !== false))?.descripcion}
+            >
+              <select
+                id="param-base-umbral"
+                className="glass-input"
+                value={parametros.umbralSobreIngresoNeto !== false ? 'neto' : 'bruto'}
+                onChange={e => cambiar('umbralSobreIngresoNeto', e.target.value === 'neto')}
+              >
+                {OPCIONES_BASE_UMBRAL.map(o => (
+                  <option key={String(o.valor)} value={o.valor ? 'neto' : 'bruto'}>{o.etiqueta}</option>
+                ))}
+              </select>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Por defecto se usa el <strong>neto</strong>, siguiendo el{' '}
+                <a href={FUENTE_UMBRAL.urlLey} target="_blank" rel="noreferrer" className="underline">
+                  {FUENTE_UMBRAL.norma}
+                </a>, que obliga a cotizar a quien tenga «{FUENTE_UMBRAL.cita}». Lo confirma el{' '}
+                <a href={FUENTE_UMBRAL.urlUgpp} target="_blank" rel="noreferrer" className="underline">
+                  ABC de rentistas de capital de la UGPP
+                </a>. Si tu contador lo interpreta distinto, puedes cambiarlo a bruto aquí.
+              </p>
             </Campo>
 
             {situacion.pideIbcPrevio && (

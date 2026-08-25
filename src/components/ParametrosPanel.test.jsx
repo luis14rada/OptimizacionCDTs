@@ -87,3 +87,37 @@ describe('ParametrosPanel', () => {
     expect(onRestaurar).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('ParametrosPanel · base del umbral de 1 SMMLV', () => {
+  it('viene en «ingreso neto» por defecto y cita la norma con enlaces oficiales', async () => {
+    const user = userEvent.setup();
+    render(<ParametrosPanel parametros={PARAMETROS_POR_DEFECTO} onCambiar={() => {}} onRestaurar={() => {}} />);
+    await user.click(screen.getByRole('button', { name: /ajustar/i }));
+
+    expect(screen.getByLabelText(/el umbral de 1 smmlv se mide sobre/i)).toHaveValue('neto');
+    expect(screen.getByRole('link', { name: /ley 2277 de 2022/i })).toHaveAttribute('href', expect.stringContaining('ley_2277_2022'));
+    expect(screen.getByRole('link', { name: /ugpp/i })).toHaveAttribute('href', expect.stringContaining('ugpp.gov.co'));
+  });
+
+  it('permite cambiar a «ingreso bruto» y avisa el cambio', async () => {
+    const user = userEvent.setup();
+    const onCambiar = vi.fn();
+    render(<ParametrosPanel parametros={PARAMETROS_POR_DEFECTO} onCambiar={onCambiar} onRestaurar={() => {}} />);
+    await user.click(screen.getByRole('button', { name: /ajustar/i }));
+
+    await user.selectOptions(screen.getByLabelText(/el umbral de 1 smmlv se mide sobre/i), 'bruto');
+
+    expect(onCambiar).toHaveBeenCalledWith(expect.objectContaining({ umbralSobreIngresoNeto: false }));
+  });
+
+  it('el resumen avisa cuando se está usando el criterio sobre bruto', () => {
+    render(
+      <ParametrosPanel
+        parametros={{ ...PARAMETROS_POR_DEFECTO, umbralSobreIngresoNeto: false }}
+        onCambiar={() => {}}
+        onRestaurar={() => {}}
+      />
+    );
+    expect(screen.getByText(/umbral sobre bruto/i)).toBeInTheDocument();
+  });
+});
