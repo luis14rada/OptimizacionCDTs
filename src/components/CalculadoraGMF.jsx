@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { calcularGMFTransaccion, calcularAhorroPorMarcarCuenta } from '../GMFEngine';
+import { calcularGMFTransaccion, calcularAhorroPorMarcarCuenta, calcularMaximoTransferible } from '../GMFEngine';
 import { TARIFA_GMF, TOPE_EXENTO_MENSUAL_UVT, UVT_GMF, FUENTE_GMF } from '../parametrosGMF';
 import Campo from './Campo';
 
@@ -20,6 +20,8 @@ export default function CalculadoraGMF() {
 
   const actual = hayMonto ? calcularGMFTransaccion({ montoTransaccion: montoNum, cuentaMarcada, ...supuestos }) : null;
   const comparacion = hayMonto ? calcularAhorroPorMarcarCuenta({ montoTransaccion: montoNum, ...supuestos }) : null;
+  // El mismo monto, leído al revés: si eso es todo el saldo, ¿cuánto se puede mover?
+  const maximo = hayMonto ? calcularMaximoTransferible({ saldoDisponible: montoNum, cuentaMarcada, ...supuestos }) : null;
 
   return (
     <div className="space-y-8">
@@ -108,6 +110,38 @@ export default function CalculadoraGMF() {
               </p>
             </div>
           )}
+
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-700 space-y-3">
+            <h4 className="text-base font-bold text-primary-900 dark:text-primary-100">
+              Si esos {formatCurrency(montoNum)} son todo lo que tienes en la cuenta
+            </h4>
+
+            {maximo.gmfTransaccion > 0 ? (
+              <>
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  El banco te debita el monto <strong>y además</strong> el {formatPorcentajeGMF(supuestos.tarifa)}, así que
+                  el saldo tiene que alcanzar para los dos: no puedes transferir todo. Lo máximo que puedes mover de una
+                  sola vez es:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                    <p className="text-slate-500 dark:text-slate-400">Máximo que puedes transferir</p>
+                    <p className="text-lg font-bold text-slate-800 dark:text-slate-100">{formatCurrency(maximo.montoTransferible)}</p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                    <p className="text-slate-500 dark:text-slate-400">Lo que se lleva el {formatPorcentajeGMF(supuestos.tarifa)}</p>
+                    <p className="text-lg font-bold text-slate-800 dark:text-slate-100">{formatCurrency(maximo.gmfTransaccion)}</p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                Puedes transferir los {formatCurrency(montoNum)} completos: con la cuenta marcada como exenta esta
+                transacción no paga {formatPorcentajeGMF(supuestos.tarifa)}, así que no necesitas dejar nada en la cuenta
+                para cubrir el impuesto.
+              </p>
+            )}
+          </div>
 
           <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
             <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">

@@ -49,3 +49,36 @@ export const calcularAhorroPorMarcarCuenta = ({ montoTransaccion, tarifa, topeEx
     ahorroAnual: gmfAnualSinMarcar - gmfAnualMarcada
   };
 };
+
+/**
+ * Problema inverso: la persona ya tiene un saldo y quiere sacarlo completo.
+ *
+ * El banco no descuenta el GMF de adentro del monto: lo debita ADEMÁS del
+ * monto, así que el saldo tiene que alcanzar para los dos. Transferir el
+ * saldo entero es imposible cuando hay GMF -- siempre queda un pedazo que
+ * debe reservarse para el impuesto.
+ *
+ * Despejando `monto + max(0, monto - exento) * tarifa <= saldo` sale
+ * `(saldo + exento * tarifa) / (1 + tarifa)`. El `min` contra el saldo cubre
+ * el caso de la cuenta marcada cuya transacción entera cabe bajo el tope
+ * exento: ahí no hay GMF y se puede mover todo.
+ */
+export const calcularMaximoTransferible = ({ saldoDisponible, cuentaMarcada, tarifa, topeExentoUvt, uvt }) => {
+  const saldo = Math.max(0, saldoDisponible);
+  const exento = cuentaMarcada ? topeExentoUvt * uvt : 0;
+
+  const exacto = Math.min(saldo, (saldo + exento * tarifa) / (1 + tarifa));
+  // Se redondea hacia abajo al peso: hacia arriba dejaría el débito por encima
+  // del saldo, que es justamente lo que se quiere evitar.
+  const montoTransferible = Math.floor(exacto);
+
+  const { gmfTransaccion } = calcularGMFTransaccion({
+    montoTransaccion: montoTransferible, cuentaMarcada, tarifa, topeExentoUvt, uvt
+  });
+
+  return {
+    montoTransferible,
+    gmfTransaccion,
+    totalDebitado: montoTransferible + gmfTransaccion
+  };
+};
