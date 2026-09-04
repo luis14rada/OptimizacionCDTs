@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { recalcularPortafolio, calcularInversionMaximaOptima, validarCDT } from '../OptimizationEngine';
+import { recalcularPortafolio, calcularInversionMaximaOptima, validarCDT, exigeUmbralDeCapital } from '../OptimizationEngine';
 import PortfolioChart from './PortfolioChart';
 import ParametrosPanel from './ParametrosPanel';
 import ComparadorEscenarios from './ComparadorEscenarios';
-import { PARAMETROS_POR_DEFECTO, parametrosPorDefecto, SITUACIONES_LABORALES } from '../parametros';
+import { PARAMETROS_POR_DEFECTO, parametrosPorDefecto } from '../parametros';
 import useEstadoPersistido from '../hooks/useEstadoPersistido';
 import { leerAlmacenado } from '../almacenamiento';
 
@@ -177,7 +177,9 @@ export default function CDTSimulator() {
   const [form, setForm] = useState(CAMPOS_INICIALES);
   const [errores, setErrores] = useState({});
   const [editandoId, setEditandoId] = useState(null);
-  const [maxInversionCalc, setMaxInversionCalc] = useState(null);
+  // Guarda el resultado completo, no solo el número: el tope puede no existir
+  // (quien ya cotiza por otro ingreso) o estar copado por el portafolio actual.
+  const [resultadoTope, setResultadoTope] = useState(null);
   const [avisoTope, setAvisoTope] = useState('');
   const [generandoPDF, setGenerandoPDF] = useState(false);
   const [errorPDF, setErrorPDF] = useState('');
@@ -200,8 +202,8 @@ export default function CDTSimulator() {
     return recalcularPortafolio(otro.cdts, { ...PARAMETROS_POR_DEFECTO, ...otro.parametros });
   }, [escenarios, escenarioActivo]);
 
-  const situacion = SITUACIONES_LABORALES[parametrosActivos.situacionLaboral] || SITUACIONES_LABORALES.rentista;
   const smmlvActivo = parametrosActivos.smmlv;
+  const hayUmbral = exigeUmbralDeCapital(parametrosActivos);
 
   const actualizarCampo = (campo, valor) => {
     setForm(f => ({ ...f, [campo]: valor }));
@@ -286,13 +288,20 @@ export default function CDTSimulator() {
 
     if (!form.tasaEA || Number.isNaN(tasa) || tasa <= 0) {
       setAvisoTope('Ingresa una tasa E.A. válida (mayor a 0) para calcular el tope.');
-      setMaxInversionCalc(null);
+      setResultadoTope(null);
       return;
     }
 
     setAvisoTope('');
-    const max = calcularInversionMaximaOptima(tasa / 100, form.frecuenciaPago, plazo, parametrosActivos);
-    setMaxInversionCalc(max);
+    // El umbral es del MES completo, no de un CDT: si el portafolio ya recibe
+    // intereses, solo queda libre la diferencia.
+    const interesComprometido = portfolioData.totales
+      ? Math.max(0, ...portfolioData.totales.flujoMensual.map(f => f.ingresoBrutoMes))
+      : 0;
+    const valor = calcularInversionMaximaOptima(
+      tasa / 100, form.frecuenciaPago, plazo, parametrosActivos, interesComprometido
+    );
+    setResultadoTope({ valor, interesComprometido });
   };
 
   // El generador de PDF pesa cientos de KB y la mayoría de visitantes nunca
@@ -490,13 +499,44 @@ export default function CDTSimulator() {
           <p role="alert" className="mt-4 text-sm text-red-600 dark:text-red-400">{avisoTope}</p>
         )}
 
-        {maxInversionCalc !== null && (
+        {resultadoTope && resultadoTope.valor === null && (
+          <div className="mt-6 p-4 bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded-xl">
+            <p className="text-lg font-medium text-orange-900 dark:text-orange-200">
+              Con tu situación laboral no existe un tope que te libre de seguridad social.
+            </p>
+            <p className="text-sm text-orange-800 dark:text-orange-300 mt-1">
+              Como ya cotizas por otro ingreso, el piso de 1 SMMLV no se exige otra vez sobre tus rentas de capital:
+              cada peso de rendimiento neto suma a tu IBC desde el primero, hasta el techo de{' '}
+              {parametrosActivos.topeIbcSmmlv} SMMLV. Si tus rentas de capital fueran tu única fuente de ingreso,
+              cambia tu situación laboral en Parámetros y el tope sí aplica.
+            </p>
+          </div>
+        )}
+
+        {resultadoTope && resultadoTope.valor === 0 && (
+          <div className="mt-6 p-4 bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded-xl">
+            <p className="text-lg font-medium text-orange-900 dark:text-orange-200">
+              Tu portafolio actual ya copó el tope del mes.
+            </p>
+            <p className="text-sm text-orange-800 dark:text-orange-300 mt-1">
+              En tu mes más cargado ya recibes {formatCurrency(resultadoTope.interesComprometido)} de intereses brutos,
+              suficiente para activar la obligación. Cualquier CDT adicional que pague en ese mes suma aportes.
+            </p>
+          </div>
+        )}
+
+        {resultadoTope && resultadoTope.valor > 0 && (
           <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-xl">
             <p className="text-lg font-medium text-green-800 dark:text-green-300">
-              Inversión máxima recomendada (Frecuencia: {FRECUENCIA_LABELS[form.frecuenciaPago]}): <span className="font-bold">{formatCurrency(maxInversionCalc)}</span>
+              Inversión máxima recomendada (Frecuencia: {FRECUENCIA_LABELS[form.frecuenciaPago]}): <span className="font-bold">{formatCurrency(resultadoTope.valor)}</span>
             </p>
             <p className="text-sm text-green-700 dark:text-green-400 mt-1">
-              Con esta inversión, el interés recibido en cada pago no superará 1 SMMLV de {parametrosActivos.anioGravable} ({formatCurrency(smmlvActivo)}), evitándote legalmente el pago de Salud y Pensión (asumiendo que no tienes otros CDTs).
+              Con esta inversión, el interés de cada pago se queda por debajo del umbral que obliga a cotizar salud y
+              pensión (1 SMMLV de {parametrosActivos.anioGravable}, {formatCurrency(smmlvActivo)}
+              {parametrosActivos.umbralSobreIngresoNeto !== false ? ', medido sobre el ingreso neto' : ''}).
+              {resultadoTope.interesComprometido > 0
+                ? ` Ya se descontaron los ${formatCurrency(resultadoTope.interesComprometido)} que recibes en tu mes más cargado.`
+                : ' Asume que este sería tu único CDT.'}
             </p>
           </div>
         )}
@@ -558,9 +598,9 @@ export default function CDTSimulator() {
                   Atención: Estás activando pagos de Seguridad Social
                 </p>
                 <p className="text-sm text-orange-800 dark:text-orange-300 mt-1">
-                  {situacion.aplicaPiso
+                  {hayUmbral
                     ? <>En uno o más meses de tu simulación, la suma de los intereses de todos tus CDTs supera 1 SMMLV ({formatCurrency(smmlvActivo)}). </>
-                    : <>Como ya cotizas por otros ingresos, tus rentas de capital aportan desde el primer peso, sin el piso de 1 SMMLV. </>}
+                    : <>Según los parámetros que elegiste, como ya cotizas por otros ingresos tus rentas de capital aportan desde el primer peso, sin umbral previo. </>}
                   Por obligación de la UGPP, pagarás un total acumulado de <span className="font-bold">{formatCurrency(portfolioData.totales.segSocialTotal)}</span> en Seguridad Social a lo largo de tu inversión.
                   Revisa las columnas de Salud y Pensión para ver la distribución exacta.
                 </p>
@@ -575,7 +615,7 @@ export default function CDTSimulator() {
                 </p>
                 <p className="text-sm text-green-800 dark:text-green-300 mt-1">
                   Tus vencimientos e intereses están distribuidos de forma que <strong>en ningún mes</strong> superas el tope de 1 SMMLV ({formatCurrency(smmlvActivo)}).
-                  Por ende, tienes cero obligación de cotizar como rentista de capital bajo esta simulación.
+                  Por ende, tienes cero obligación de cotizar por tus rentas de capital bajo esta simulación.
                 </p>
               </div>
             </div>

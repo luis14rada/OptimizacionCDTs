@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CDTSimulator from './CDTSimulator';
 
@@ -24,6 +24,28 @@ const llenarFormularioValido = async (user, overrides = {}) => {
   await user.type(screen.getByLabelText(/valor inversión/i), valores.valor);
   await user.type(screen.getByLabelText(/tasa e\.a/i), valores.tasaEA);
 };
+
+// El nombre del banco aparece ahora en dos lugares a propósito: la leyenda de
+// la gráfica, que desagrega el flujo mensual por CDT, y la tabla del
+// portafolio. Las pruebas que hablan de la tabla se acotan a ella para no
+// chocar con la leyenda.
+const NOMBRE_TABLA = /detalle del portafolio/i;
+const enPortafolio = (texto) => within(screen.getByRole('table', { name: NOMBRE_TABLA })).getByText(texto);
+const sinEnPortafolio = (texto) => {
+  const tabla = screen.queryByRole('table', { name: NOMBRE_TABLA });
+  return tabla ? within(tabla).queryByText(texto) : null;
+};
+// La situación por defecto es "empleado", que no tiene piso de 1 SMMLV. Las
+// pruebas sobre el tope y el banner describen al rentista de capital, así que
+// lo eligen explícitamente por la interfaz.
+const elegirSituacion = async (user, valor) => {
+  await user.click(screen.getByRole('button', { name: /ajustar/i }));
+  await user.selectOptions(screen.getByLabelText(/tu situación laboral/i), valor);
+  await user.click(screen.getByRole('button', { name: /ocultar/i }));
+};
+
+const esperarEnPortafolio = async (texto) =>
+  within(await screen.findByRole('table', { name: NOMBRE_TABLA })).findByText(texto);
 
 describe('CDTSimulator', () => {
   beforeEach(() => {
@@ -54,7 +76,7 @@ describe('CDTSimulator', () => {
     await user.click(screen.getByRole('button', { name: /agregar cdt a la simulación/i }));
 
     expect(await screen.findByRole('heading', { name: /portafolio de cdts/i })).toBeInTheDocument();
-    expect(screen.getByText('Bancolombia')).toBeInTheDocument();
+    expect(enPortafolio('Bancolombia')).toBeInTheDocument();
 
     // El formulario se limpia después de agregar.
     expect(screen.getByLabelText(/banco \/ entidad/i)).toHaveValue('');
@@ -66,11 +88,11 @@ describe('CDTSimulator', () => {
 
     await llenarFormularioValido(user);
     await user.click(screen.getByRole('button', { name: /agregar cdt a la simulación/i }));
-    expect(await screen.findByText('Bancolombia')).toBeInTheDocument();
+    expect(await esperarEnPortafolio('Bancolombia')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /eliminar cdt de bancolombia/i }));
 
-    expect(screen.queryByText('Bancolombia')).not.toBeInTheDocument();
+    expect(sinEnPortafolio('Bancolombia')).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /portafolio de cdts/i })).not.toBeInTheDocument();
   });
 
@@ -83,7 +105,21 @@ describe('CDTSimulator', () => {
     expect(await screen.findByText(/ingresa una tasa e\.a\. válida/i)).toBeInTheDocument();
   });
 
-  it('calcula el tope máximo de inversión con una tasa E.A. válida', async () => {
+  it('calcula el tope máximo de inversión para un rentista con una tasa E.A. válida', async () => {
+    const user = userEvent.setup();
+    render(<CDTSimulator />);
+
+    await elegirSituacion(user, 'rentista');
+    await user.type(screen.getByLabelText(/tasa e\.a/i), '11.5');
+    await user.click(screen.getByRole('button', { name: /calcular tope máximo/i }));
+
+    expect(await screen.findByText(/inversión máxima recomendada/i)).toBeInTheDocument();
+  });
+
+  it('el empleado también recibe un tope, porque el umbral de 1 SMMLV le aplica igual', async () => {
+    // La situación por defecto es empleado. El art. 89 de la Ley 2277 de 2022 no
+    // condiciona el umbral a tener salario, así que sí hay un monto por debajo
+    // del cual no se activan aportes.
     const user = userEvent.setup();
     render(<CDTSimulator />);
 
@@ -93,13 +129,31 @@ describe('CDTSimulator', () => {
     expect(await screen.findByText(/inversión máxima recomendada/i)).toBeInTheDocument();
   });
 
+  it('con el criterio conservador le dice que no hay tope, en vez de darle un número', async () => {
+    // Regresión: el tope se calculaba igual para todas las situaciones y sin
+    // mirar este supuesto, así que al agregar ese "tope óptimo" la simulación
+    // le cobraba los aportes que el número prometía evitar.
+    const user = userEvent.setup();
+    render(<CDTSimulator />);
+
+    await user.click(screen.getByRole('button', { name: /ajustar/i }));
+    await user.selectOptions(screen.getByLabelText(/ese umbral te aplica aunque ya tengas salario/i), 'no');
+    await user.click(screen.getByRole('button', { name: /ocultar/i }));
+
+    await user.type(screen.getByLabelText(/tasa e\.a/i), '11.5');
+    await user.click(screen.getByRole('button', { name: /calcular tope máximo/i }));
+
+    expect(await screen.findByText(/no existe un tope que te libre de seguridad social/i)).toBeInTheDocument();
+    expect(screen.queryByText(/inversión máxima recomendada/i)).not.toBeInTheDocument();
+  });
+
   it('al descargar el PDF, invoca exportarPortafolioPDF con los datos del portafolio', async () => {
     const user = userEvent.setup();
     render(<CDTSimulator />);
 
     await llenarFormularioValido(user);
     await user.click(screen.getByRole('button', { name: /agregar cdt a la simulación/i }));
-    await screen.findByText('Bancolombia');
+    await esperarEnPortafolio('Bancolombia');
 
     await user.click(screen.getByRole('button', { name: /descargar pdf/i }));
 
@@ -116,7 +170,7 @@ describe('CDTSimulator', () => {
 
     await llenarFormularioValido(user);
     await user.click(screen.getByRole('button', { name: /agregar cdt a la simulación/i }));
-    await screen.findByText('Bancolombia');
+    await esperarEnPortafolio('Bancolombia');
 
     // Antes de comparar no hay selector de escenarios
     expect(screen.queryByRole('group', { name: /escenario en edición/i })).not.toBeInTheDocument();
@@ -138,7 +192,7 @@ describe('CDTSimulator', () => {
 
     await llenarFormularioValido(user);
     await user.click(screen.getByRole('button', { name: /agregar cdt a la simulación/i }));
-    await screen.findByText('Bancolombia');
+    await esperarEnPortafolio('Bancolombia');
     await user.click(screen.getByRole('button', { name: /comparar escenarios/i }));
     await screen.findByRole('group', { name: /escenario en edición/i });
 
@@ -152,7 +206,8 @@ describe('CDTSimulator', () => {
     const user = userEvent.setup();
     render(<CDTSimulator />);
 
-    // Un CDT pequeño con tasa baja no debería activar seguridad social.
+    // Un CDT pequeño con tasa baja no debería activar seguridad social a un rentista.
+    await elegirSituacion(user, 'rentista');
     await llenarFormularioValido(user, { valor: '1000000', tasaEA: '5' });
     await user.click(screen.getByRole('button', { name: /agregar cdt a la simulación/i }));
 
@@ -165,7 +220,7 @@ describe('CDTSimulator', () => {
 
     await llenarFormularioValido(user);
     await user.click(screen.getByRole('button', { name: /agregar cdt a la simulación/i }));
-    await screen.findByText('Bancolombia');
+    await esperarEnPortafolio('Bancolombia');
 
     await user.click(screen.getByRole('button', { name: /editar cdt de bancolombia/i }));
 
@@ -178,8 +233,8 @@ describe('CDTSimulator', () => {
     await user.type(screen.getByLabelText(/banco \/ entidad/i), 'Davivienda');
     await user.click(screen.getByRole('button', { name: /guardar cambios/i }));
 
-    expect(await screen.findByText('Davivienda')).toBeInTheDocument();
-    expect(screen.queryByText('Bancolombia')).not.toBeInTheDocument();
+    expect(await esperarEnPortafolio('Davivienda')).toBeInTheDocument();
+    expect(sinEnPortafolio('Bancolombia')).not.toBeInTheDocument();
     // Una sola fila de datos, no dos -- se editó en el lugar, no se duplicó.
     expect(screen.getAllByRole('button', { name: /eliminar cdt/i })).toHaveLength(1);
   });
@@ -190,7 +245,7 @@ describe('CDTSimulator', () => {
 
     await llenarFormularioValido(user);
     await user.click(screen.getByRole('button', { name: /agregar cdt a la simulación/i }));
-    await screen.findByText('Bancolombia');
+    await esperarEnPortafolio('Bancolombia');
 
     await user.click(screen.getByRole('button', { name: /editar cdt de bancolombia/i }));
     await user.clear(screen.getByLabelText(/banco \/ entidad/i));
@@ -198,8 +253,8 @@ describe('CDTSimulator', () => {
 
     await user.click(screen.getByRole('button', { name: /cancelar edición/i }));
 
-    expect(screen.getByText('Bancolombia')).toBeInTheDocument();
-    expect(screen.queryByText('Davivienda')).not.toBeInTheDocument();
+    expect(enPortafolio('Bancolombia')).toBeInTheDocument();
+    expect(sinEnPortafolio('Davivienda')).not.toBeInTheDocument();
     expect(screen.getByLabelText(/banco \/ entidad/i)).toHaveValue('');
     expect(screen.getByRole('button', { name: /agregar cdt a la simulación/i })).toBeInTheDocument();
   });

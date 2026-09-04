@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { PARAMETROS_POR_DEFECTO, SITUACIONES_LABORALES } from './parametros';
+import { exigeUmbralDeCapital } from './OptimizationEngine';
 
 const porcentaje = (v) => `${(v * 100).toFixed(2).replace(/\.?0+$/, '')}%`;
 
@@ -87,10 +88,10 @@ export const exportarPortafolioPDF = (cdts, totales, parametros = PARAMETROS_POR
     ? 'Atención: este portafolio activa pagos de Seguridad Social'
     : 'Portafolio optimizado: no activa pagos de Seguridad Social';
   const bannerDetalle = activaSegSocial
-    ? `${situacion.aplicaPiso
+    ? `${exigeUmbralDeCapital(p)
         ? `En uno o más meses la suma de intereses supera 1 SMMLV (${formatCurrency(p.smmlv)}).`
-        : 'Como ya cotizas por otros ingresos, las rentas de capital aportan sin el piso de 1 SMMLV.'} Total acumulado en Seguridad Social: ${formatCurrency(totales.segSocialTotal)}.`
-    : `En ningún mes la suma de intereses supera 1 SMMLV (${formatCurrency(p.smmlv)}). Sin obligación de cotizar como rentista de capital.`;
+        : 'Según los parámetros elegidos, como ya cotizas por otros ingresos las rentas de capital aportan sin umbral previo.'} Total acumulado en Seguridad Social: ${formatCurrency(totales.segSocialTotal)}.`
+    : `En ningún mes la suma de intereses supera 1 SMMLV (${formatCurrency(p.smmlv)}). Sin obligación de cotizar por rentas de capital.`;
 
   doc.setFillColor(...bannerColor);
   doc.roundedRect(margin, cursorY, pageWidth - margin * 2, 34, 4, 4, 'F');

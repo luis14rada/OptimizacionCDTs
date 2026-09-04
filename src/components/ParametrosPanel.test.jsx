@@ -14,7 +14,7 @@ const montar = (parametros = PARAMETROS_POR_DEFECTO) => {
 describe('ParametrosPanel', () => {
   it('empieza cerrado y muestra un resumen de los valores activos', () => {
     montar();
-    expect(screen.getByText(/2026 · Retención 4% · Rentista de capital/)).toBeInTheDocument();
+    expect(screen.getByText(/2026 · Retención 4% · Ya cotizo como empleado/)).toBeInTheDocument();
     expect(screen.queryByLabelText(/año gravable/i)).not.toBeInTheDocument();
   });
 
@@ -56,20 +56,32 @@ describe('ParametrosPanel', () => {
     expect(screen.getByText(/para 2026 aún no hay decreto/i)).toBeInTheDocument();
   });
 
-  it('solo pide el IBC previo cuando la persona ya cotiza por otro ingreso', async () => {
+  it('no pide el IBC previo a un rentista de capital, que no cotiza por otro ingreso', async () => {
+    const user = userEvent.setup();
+    montar({ ...PARAMETROS_POR_DEFECTO, situacionLaboral: 'rentista' });
+    await user.click(screen.getByRole('button', { name: /ajustar/i }));
+
+    expect(screen.queryByLabelText(/salario mensual sobre el que ya cotizas/i)).not.toBeInTheDocument();
+  });
+
+  it('pide el IBC previo por defecto, porque la situación por defecto es empleado', async () => {
+    const user = userEvent.setup();
+    montar();
+    await user.click(screen.getByRole('button', { name: /ajustar/i }));
+    expect(screen.getByLabelText(/salario mensual sobre el que ya cotizas/i)).toBeInTheDocument();
+  });
+
+  it('explica qué valor va en el IBC: el salario base de cotización, sin auxilio de transporte', async () => {
+    // La duda real de quien llena el campo es si va el salario del contrato o
+    // algo distinto. El texto tiene que responderla sin que toque buscar afuera.
     const user = userEvent.setup();
     montar();
     await user.click(screen.getByRole('button', { name: /ajustar/i }));
 
-    // Como rentista no debe pedirlo
-    expect(screen.queryByLabelText(/ibc por el que ya cotizas/i)).not.toBeInTheDocument();
-  });
-
-  it('pide el IBC previo para quien ya cotiza como empleado', async () => {
-    const user = userEvent.setup();
-    montar({ ...PARAMETROS_POR_DEFECTO, situacionLaboral: 'empleado' });
-    await user.click(screen.getByRole('button', { name: /ajustar/i }));
-    expect(screen.getByLabelText(/ibc por el que ya cotizas/i)).toBeInTheDocument();
+    expect(screen.getByText(/desprendible de nómina/i)).toBeInTheDocument();
+    expect(screen.getByText(/auxilio de transporte/i)).toBeInTheDocument();
+    expect(screen.getByText(/salario integral/i)).toBeInTheDocument();
+    expect(screen.getByText(/Decreto 1833 de 2016/i)).toBeInTheDocument();
   });
 
   it('avisa que los valores son supuestos y hay que validarlos con un contador', async () => {
@@ -95,8 +107,31 @@ describe('ParametrosPanel · base del umbral de 1 SMMLV', () => {
     await user.click(screen.getByRole('button', { name: /ajustar/i }));
 
     expect(screen.getByLabelText(/el umbral de 1 smmlv se mide sobre/i)).toHaveValue('neto');
-    expect(screen.getByRole('link', { name: /ley 2277 de 2022/i })).toHaveAttribute('href', expect.stringContaining('ley_2277_2022'));
-    expect(screen.getByRole('link', { name: /ugpp/i })).toHaveAttribute('href', expect.stringContaining('ugpp.gov.co'));
+    // Hay dos campos que citan la misma norma (la base del umbral y si aplica
+    // con salario), así que los enlaces aparecen por duplicado a propósito.
+    for (const enlace of screen.getAllByRole('link', { name: /ley 2277 de 2022/i })) {
+      expect(enlace).toHaveAttribute('href', expect.stringContaining('ley_2277_2022'));
+    }
+    for (const enlace of screen.getAllByRole('link', { name: /ugpp/i })) {
+      expect(enlace).toHaveAttribute('href', expect.stringContaining('ugpp.gov.co'));
+    }
+  });
+
+  it('a quien ya cotiza le pregunta si el umbral le aplica, y por defecto dice que sí', async () => {
+    const user = userEvent.setup();
+    montar(); // por defecto: empleado
+    await user.click(screen.getByRole('button', { name: /ajustar/i }));
+
+    expect(screen.getByLabelText(/ese umbral te aplica aunque ya tengas salario/i)).toHaveValue('si');
+    expect(screen.getByText(/no hay concepto oficial que resuelva expresamente el caso mixto/i)).toBeInTheDocument();
+  });
+
+  it('no le hace esa pregunta a un rentista, que no cotiza por ningún salario', async () => {
+    const user = userEvent.setup();
+    montar({ ...PARAMETROS_POR_DEFECTO, situacionLaboral: 'rentista' });
+    await user.click(screen.getByRole('button', { name: /ajustar/i }));
+
+    expect(screen.queryByLabelText(/ese umbral te aplica aunque ya tengas salario/i)).not.toBeInTheDocument();
   });
 
   it('permite cambiar a «ingreso bruto» y avisa el cambio', async () => {

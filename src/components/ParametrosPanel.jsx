@@ -4,6 +4,9 @@ import {
   OPCIONES_RETENCION,
   OPCIONES_BASE_UMBRAL,
   FUENTE_UMBRAL,
+  FUENTE_IBC,
+  OPCIONES_UMBRAL_SALARIO,
+  FUENTE_UMBRAL_SALARIO,
   SITUACIONES_LABORALES,
   parametrosPorDefecto
 } from '../parametros';
@@ -36,7 +39,8 @@ export default function ParametrosPanel({ parametros, onCambiar, onRestaurar }) 
       ibcYaCotizado: parametros.ibcYaCotizado,
       // Es una interpretación de norma elegida por la persona, no una
       // constante del año: no se pisa al cambiar de año gravable.
-      umbralSobreIngresoNeto: parametros.umbralSobreIngresoNeto
+      umbralSobreIngresoNeto: parametros.umbralSobreIngresoNeto,
+      umbralAplicaConSalario: parametros.umbralAplicaConSalario
     });
   };
 
@@ -56,6 +60,7 @@ export default function ParametrosPanel({ parametros, onCambiar, onRestaurar }) 
           <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
             {parametros.anioGravable} · Retención {porcentaje(parametros.retencion)} · {situacion.etiqueta}
             {parametros.umbralSobreIngresoNeto === false && ' · Umbral sobre bruto'}
+            {parametros.umbralAplicaConSalario === false && ' · Sin umbral por tener salario'}
             {parametros.componenteInflacionarioActivo && ' · Comp. inflacionario activo'}
           </p>
         </div>
@@ -156,11 +161,42 @@ export default function ParametrosPanel({ parametros, onCambiar, onRestaurar }) 
               </p>
             </Campo>
 
+            {!SITUACIONES_LABORALES[parametros.situacionLaboral]?.aplicaPisoIbc && (
+              <Campo
+                etiqueta="¿Ese umbral te aplica aunque ya tengas salario?"
+                htmlFor="param-umbral-salario"
+                ayuda={OPCIONES_UMBRAL_SALARIO.find(o => o.valor === (parametros.umbralAplicaConSalario !== false))?.descripcion}
+              >
+                <select
+                  id="param-umbral-salario"
+                  className="glass-input"
+                  value={parametros.umbralAplicaConSalario !== false ? 'si' : 'no'}
+                  onChange={e => cambiar('umbralAplicaConSalario', e.target.value === 'si')}
+                >
+                  {OPCIONES_UMBRAL_SALARIO.map(o => (
+                    <option key={String(o.valor)} value={o.valor ? 'si' : 'no'}>{o.etiqueta}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  El{' '}
+                  <a href={FUENTE_UMBRAL_SALARIO.urlLey} target="_blank" rel="noreferrer" className="underline">
+                    {FUENTE_UMBRAL_SALARIO.norma}
+                  </a>{' '}
+                  hace nacer la obligación cuando se perciben ingresos netos de 1 SMMLV al mes, sin condicionarla a
+                  tener o no vínculo laboral, y el{' '}
+                  <a href={FUENTE_UMBRAL_SALARIO.urlUgpp} target="_blank" rel="noreferrer" className="underline">
+                    ABC de rentistas de capital de la UGPP
+                  </a>{' '}
+                  trata como independiente a quien, teniendo salario, percibe además otros ingresos. No hay concepto
+                  oficial que resuelva expresamente el caso mixto, así que puedes cambiarlo al criterio conservador.
+                </p>
+              </Campo>
+            )}
+
             {situacion.pideIbcPrevio && (
               <Campo
-                etiqueta="IBC por el que ya cotizas al mes"
+                etiqueta="Salario mensual sobre el que ya cotizas (IBC)"
                 htmlFor="param-ibc-previo"
-                ayuda="Sirve para aplicar el techo de 25 SMMLV sobre tu base total. Déjalo en 0 si no lo sabes."
               >
                 <input
                   id="param-ibc-previo"
@@ -170,6 +206,19 @@ export default function ParametrosPanel({ parametros, onCambiar, onRestaurar }) 
                   onChange={e => cambiar('ibcYaCotizado', Math.max(0, parseFloat(e.target.value) || 0))}
                 />
                 <p className="text-xs text-slate-500 dark:text-slate-400">{moneda(parametros.ibcYaCotizado || 0)}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <strong>Qué poner:</strong> el valor que aparece como base de salud y pensión en tu desprendible de
+                  nómina — no tu salario total ni lo que te consignan. Es tu salario mensual más lo que sea
+                  contraprestación directa del servicio (comisiones,
+                  horas extras, bonificaciones salariales). <strong>No</strong> entran el auxilio de transporte ni
+                  las prestaciones sociales. Si tienes salario integral, es el <strong>70%</strong> de lo pactado.
+                  La base tiene piso de 1 SMMLV ({moneda(parametros.smmlv)}) y techo de {FUENTE_IBC.topeSmmlv} SMMLV
+                  ({moneda(parametros.smmlv * FUENTE_IBC.topeSmmlv)}). Base normativa: {FUENTE_IBC.norma}.
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Si no lo sabes, déjalo en 0: solo se usa para aplicar el techo de {FUENTE_IBC.topeSmmlv} SMMLV sobre
+                  tu base combinada, así que dejarlo en 0 nunca subestima tus aportes.
+                </p>
               </Campo>
             )}
           </div>
