@@ -1,8 +1,22 @@
 import React from 'react';
+import { umbralEnBrutoDelMes, exigeUmbralDeCapital } from '../OptimizationEngine';
+import { PARAMETROS_POR_DEFECTO } from '../parametros';
 
 const formatCurrency = (value) => {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
 };
+
+/*
+ * Las diferencias contra el umbral pueden ser de centavos -- en un caso real
+ * fueron 11 centavos los que separaban $0 de $199.603 al año. Redondearlas a
+ * pesos, como el resto de la app, mostraría "$ 0" y haría ver el resultado
+ * como arbitrario.
+ */
+const formatDiferencia = (valor) => new Intl.NumberFormat('es-CO', {
+  style: 'currency', currency: 'COP',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: Math.abs(valor) < 100 ? 2 : 0
+}).format(valor);
 
 const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
@@ -69,11 +83,34 @@ const construirLeyenda = (flujoMensual) => {
   });
 };
 
-export default function PortfolioChart({ flujoMensual, smmlv }) {
+export default function PortfolioChart({ flujoMensual, parametros }) {
+  const p = { ...PARAMETROS_POR_DEFECTO, ...parametros };
+
   if (!flujoMensual || flujoMensual.length === 0) return null;
 
-  const maxValor = Math.max(smmlv, ...flujoMensual.map(f => f.ingresoBrutoMes)) * 1.08;
-  const topePorcentaje = (smmlv / maxValor) * 100;
+  /*
+   * El eje de esta gráfica es interés BRUTO del mes, así que la línea de
+   * referencia tiene que ir en el umbral expresado en bruto. Antes se dibujaba
+   * en el SMMLV ($1.750.905), que es el umbral sobre el NETO: quedaba un 38% a
+   * la izquierda de donde de verdad nace la obligación, y meses que no pagaban
+   * aparecían cruzándola.
+   */
+  const umbral = umbralEnBrutoDelMes(p);
+  const hayUmbral = exigeUmbralDeCapital(p);
+
+  const maxValor = Math.max(umbral, ...flujoMensual.map(f => f.ingresoBrutoMes)) * 1.08;
+  const topePorcentaje = (umbral / maxValor) * 100;
+
+  // Qué tan cerca del umbral hay que estar para que valga la pena avisarlo.
+  const CERCA = 0.10;
+
+  const notaDelMes = (mes) => {
+    if (!hayUmbral) return mes.excedeTope ? { texto: 'paga seg. social', alerta: true } : null;
+    const diferencia = mes.ingresoBrutoMes - umbral;
+    if (diferencia > 0) return { texto: `supera el límite por ${formatDiferencia(diferencia)}`, alerta: true };
+    if (-diferencia <= umbral * CERCA) return { texto: `a ${formatDiferencia(-diferencia)} del límite`, alerta: false };
+    return null;
+  };
 
   // Cuando ningún mes se acerca al tope, la línea de referencia queda pegada
   // al borde derecho y su etiqueta se salía de la página. Pasada la mitad,
@@ -109,8 +146,10 @@ export default function PortfolioChart({ flujoMensual, smmlv }) {
           Flujo de intereses brutos por mes
         </h3>
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          Intereses de tus CDTs en cada mes, desagregados por el CDT que los paga. La línea punteada marca
-          1 SMMLV, el tope que activa seguridad social para un rentista de capital.
+          Intereses de tus CDTs en cada mes, desagregados por el CDT que los paga.{' '}
+          {hayUmbral
+            ? <>La línea punteada marca el límite a partir del cual se activa seguridad social.</>
+            : <>Con los parámetros que elegiste no hay umbral: cualquier renta de capital genera aportes.</>}
         </p>
       </div>
 
@@ -137,24 +176,28 @@ export default function PortfolioChart({ flujoMensual, smmlv }) {
         la tabla de abajo queda como la única fuente de verdad para ese caso.
       */}
       <div className="relative pl-2 pr-1" aria-hidden="true">
-        {/* Línea de referencia del tope de 1 SMMLV */}
-        <div
-          className="absolute top-0 bottom-0 border-l-2 border-dashed border-slate-400 dark:border-slate-500 z-10"
-          style={{ left: `calc(${Math.min(topePorcentaje, 100)}% + 0.5rem)` }}
-          aria-hidden="true"
-        >
-          <span className={`absolute -top-1 text-[10px] whitespace-nowrap text-slate-500 dark:text-slate-400 bg-white/70 dark:bg-slate-900/70 px-1 rounded ${
-            etiquetaTopeALaIzquierda ? 'right-1' : 'left-1'
-          }`}>
-            Tope 1 SMMLV ({formatCurrency(smmlv)})
-          </span>
-        </div>
+        {/* Línea de referencia: el umbral, en la misma unidad del eje */}
+        {hayUmbral && (
+          <div
+            className="absolute top-0 bottom-0 border-l-2 border-dashed border-slate-400 dark:border-slate-500 z-10"
+            style={{ left: `calc(${Math.min(topePorcentaje, 100)}% + 0.5rem)` }}
+            aria-hidden="true"
+          >
+            <span className={`absolute -top-1 text-[10px] whitespace-nowrap text-slate-500 dark:text-slate-400 bg-white/70 dark:bg-slate-900/70 px-1 rounded ${
+              etiquetaTopeALaIzquierda ? 'right-1' : 'left-1'
+            }`}>
+              Límite {formatCurrency(umbral)}
+              {p.umbralSobreIngresoNeto ? ` (1 SMMLV neto)` : ` (1 SMMLV)`}
+            </span>
+          </div>
+        )}
 
         <ul className="space-y-3 pt-6">
           {flujoMensual.map((mes) => {
             const anchoPorcentaje = Math.max((mes.ingresoBrutoMes / maxValor) * 100, 1.5);
             const anchoDibujado = Math.min(anchoPorcentaje, 100);
             const segmentos = segmentosDe(mes);
+            const nota = notaDelMes(mes);
 
             return (
               <li key={mes.mesKey} className="flex items-center gap-3">
@@ -184,7 +227,7 @@ export default function PortfolioChart({ flujoMensual, smmlv }) {
                       // consecuencia de más peso de toda la pestaña.
                       const contexto = `${formatCurrency(mes.ingresoBrutoMes)} en el mes${
                         mes.excedeTope ? ` · Seg. social ${formatCurrency(mes.segSocialMes)}` : ' · sin seguridad social'
-                      }`;
+                      }${nota ? ` · ${nota.texto}` : ''}`;
                       const titulo = seg.etiqueta
                         ? `${formatMes(mes.mesKey)} · ${seg.etiqueta}: ${formatCurrency(seg.interesBruto)} (${seg.porcentajeDelMes.toFixed(0)}% del mes) · ${contexto}`
                         : `${formatMes(mes.mesKey)}: ${contexto}`;
@@ -206,11 +249,15 @@ export default function PortfolioChart({ flujoMensual, smmlv }) {
                 </div>
                 {/* w-24 en móvil: con w-28 fijo la fila desbordaba 6px y metía scroll
                     horizontal en toda la página a 375px de ancho. */}
-                <span className="w-24 sm:w-28 shrink-0 text-xs font-medium text-slate-600 dark:text-slate-300 tabular-nums">
+                <span className="w-24 sm:w-36 shrink-0 text-xs font-medium text-slate-600 dark:text-slate-300 tabular-nums">
                   {formatCurrency(mes.ingresoBrutoMes)}
-                  {mes.excedeTope && (
-                    <span className="block text-[10px] font-semibold text-orange-700 dark:text-orange-300">
-                      paga seg. social
+                  {nota && (
+                    <span className={`block text-[10px] font-semibold ${
+                      nota.alerta
+                        ? 'text-orange-700 dark:text-orange-300'
+                        : 'text-slate-500 dark:text-slate-400'
+                    }`}>
+                      {nota.texto}
                     </span>
                   )}
                 </span>
@@ -231,8 +278,8 @@ export default function PortfolioChart({ flujoMensual, smmlv }) {
       <div className="sr-only">
         <table>
           <caption>
-            Flujo de intereses brutos por mes, desagregado por CDT, con el tope de 1 SMMLV
-            ({formatCurrency(smmlv)}) como referencia
+            Flujo de intereses brutos por mes, desagregado por CDT
+            {hayUmbral ? `, con el límite de ${formatCurrency(umbral)} como referencia` : ''}
           </caption>
           <thead>
             <tr>
@@ -240,6 +287,7 @@ export default function PortfolioChart({ flujoMensual, smmlv }) {
               <th scope="col">Intereses brutos</th>
               <th scope="col">Desglose por CDT</th>
               <th scope="col">¿Genera aportes a seguridad social?</th>
+              <th scope="col">Distancia al límite</th>
               <th scope="col">Seguridad social</th>
             </tr>
           </thead>
@@ -256,6 +304,7 @@ export default function PortfolioChart({ flujoMensual, smmlv }) {
                     : '—'}
                 </td>
                 <td>{mes.excedeTope ? 'Sí' : 'No'}</td>
+                <td>{notaDelMes(mes)?.texto || '—'}</td>
                 <td>{mes.segSocialMes > 0 ? formatCurrency(mes.segSocialMes) : '—'}</td>
               </tr>
             ))}
