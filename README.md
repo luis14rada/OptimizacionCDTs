@@ -42,10 +42,11 @@ ajustables desde la interfaz, porque cambian cada año.
 | Año gravable | 2026 | Al cambiarlo se cargan el SMMLV y las tarifas de ese año |
 | Retención en la fuente | 4% | 7% para no declarantes, o un valor personalizado |
 | Costos presuntos UGPP | 27,5% | Se descuentan del ingreso antes de calcular el IBC |
-| Situación laboral | Rentista de capital | Determina si aplican salud, pensión y el piso de 1 SMMLV |
+| Situación laboral | Ya cotizo como empleado | Determina si aplican salud, pensión y el piso del IBC |
 | Componente inflacionario | Desactivado | Su porcentaje se fija por decreto **después** de terminado el año |
 | Tope del IBC | 25 SMMLV | Límite legal superior del ingreso base de cotización |
 | Base del umbral de 1 SMMLV | Ingreso neto | Sobre qué se compara el umbral que activa la obligación. Ver la sección siguiente |
+| El umbral aplica con salario | Sí | Si el umbral se le exige también a quien ya cotiza por un empleo. Ver la sección siguiente |
 
 ### Sobre qué ingreso se mide el umbral de 1 SMMLV
 
@@ -70,12 +71,34 @@ desde el panel «Parámetros de cálculo».
 
 ### Sobre la situación laboral
 
-| Situación | Salud | Pensión | Piso de 1 SMMLV |
-|---|---|---|---|
-| Rentista de capital | Sí | Sí | Aplica |
-| Pensionado | Sí | No | Aplica |
-| Ya cotiza como empleado | Sí | Sí | No vuelve a aplicar |
-| Ya cotiza como independiente | Sí | Sí | No vuelve a aplicar |
+| Situación | Salud | Pensión | Umbral de 1 SMMLV | Piso del IBC |
+|---|---|---|---|---|
+| Rentista de capital | Sí | Sí | Aplica | Aplica |
+| Pensionado | Sí | No | Aplica | Aplica |
+| Ya cotiza como empleado | Sí | Sí | Aplica | No vuelve a aplicar |
+| Ya cotiza como independiente | Sí | Sí | Aplica | No vuelve a aplicar |
+
+Son dos cosas distintas y la app las separa. El **umbral** decide *¿debo cotizar?*; el **piso
+del IBC** decide *¿sobre qué base mínima?*. Quien ya cotiza por un salario no vuelve a
+necesitar el piso —su base mínima ya está cubierta— pero sí conserva el umbral.
+
+### ¿El umbral aplica a quien ya tiene salario?
+
+El caso más común de esta app es alguien empleado que además abre un CDT. El
+[artículo 89 de la Ley 2277 de 2022](http://secretariasenado.gov.co/senado/basedoc/ley_2277_2022_pr002.html)
+hace nacer la obligación cuando se perciben ingresos netos de 1 SMMLV al mes, **sin
+condicionarla a tener o no vínculo laboral**, y el
+[ABC de rentistas de capital de la UGPP](https://www.ugpp.gov.co/abc_rentistas_capital/) trata como
+trabajador independiente a quien, teniendo salario, percibe además otros ingresos — es decir, con la
+misma regla y el mismo umbral.
+
+Por eso el valor por defecto es que **sí aplica**. Ningún concepto oficial resuelve expresamente el
+caso mixto, así que se dejó configurable: el criterio conservador (aportar desde el primer peso) se
+recupera desde el panel de parámetros.
+
+La diferencia no es menor. Con un salario de $5.000.000 de IBC y un CDT de $50.000.000 al 11,5% E.A.
+mensual, el criterio conservador cobra **$37.657 al mes** donde la lectura literal de la norma no
+cobra nada.
 
 Para quienes ya cotizan por otro ingreso, la app pide el IBC que ya se cotiza para aplicar
 el techo de 25 SMMLV sobre la base combinada. **Estos son supuestos simplificados**: el
@@ -162,10 +185,10 @@ La app queda en `http://localhost:5173`.
 El proyecto usa [Vitest](https://vitest.dev/) y [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/).
 
 - `src/OptimizationEngine.test.js` — la lógica de cálculo: tasas periódicas, seguridad social, validaciones y la consolidación/prorrateo mensual del portafolio. Es la parte crítica: un error aquí significa un cálculo incorrecto para un usuario real.
-- `src/components/CDTSimulator.test.jsx` — validaciones del formulario, agregar y eliminar CDTs, cálculo del tope máximo, y exportación a PDF.
+- `src/components/CDTSimulator.test.jsx` — validaciones del formulario, agregar y eliminar CDTs, los tres estados del tope máximo (hay tope, no existe tope, tope copado), y exportación a PDF.
 - `src/components/DisclaimerModal.test.jsx` — el aviso legal, que solo se cierre al aceptarlo explícitamente, y que el foco quede atrapado dentro del modal.
 - `src/components/ThemeToggle.test.jsx` — alternancia de tema claro/oscuro.
-- `src/components/PortfolioChart.test.jsx` — el gráfico de flujo mensual y su tabla accesible equivalente para lectores de pantalla.
+- `src/components/PortfolioChart.test.jsx` — el gráfico de flujo mensual desagregado por CDT, la posición de la línea del límite, el aviso de distancia al límite y la tabla accesible equivalente para lectores de pantalla.
 - `src/components/ErrorBoundary.test.jsx` — que un error de render muestre un mensaje en vez de pantalla en blanco.
 - `src/pdfExport.test.js` — la generación real del PDF (jsPDF sin mockear), incluidos los distintos banners y el uso del año gravable correcto.
 - `src/parametros.test.js` — los parámetros configurables: retención, componente inflacionario, situación laboral y constantes por año.
@@ -177,18 +200,24 @@ El proyecto usa [Vitest](https://vitest.dev/) y [React Testing Library](https://
 - `src/components/CadenaRentabilidadReal.test.jsx` — el formulario de rentabilidad real: cambio de retención, aviso de pérdida de poder adquisitivo, y el mensaje de "menos de la mitad" cuando aplica.
 - `src/App.test.jsx` — cambiar de pestaña muestra la herramienta correcta y oculta las otras, y que el encabezado (título y bajada) cambie según la pestaña activa.
 
-Hay un bloque de **pruebas de regresión** en `OptimizationEngine.test.js` que cubre tres errores
-de cálculo detectados en una auditoría: el techo de 25 SMMLV que faltaba, los periodos parciales
-que se perdían cuando el plazo no era múltiplo de la frecuencia, y el desbordamiento de fechas a
-fin de mes. Cada una se escribió antes del arreglo y fallaba con el código anterior.
+Hay varios bloques de **pruebas de regresión** en `OptimizationEngine.test.js`, cada uno escrito
+antes de su arreglo y verificado contra el código anterior:
+
+- Los tres errores de la auditoría inicial: el techo de 25 SMMLV que faltaba, los periodos parciales
+  que se perdían cuando el plazo no era múltiplo de la frecuencia, y el desbordamiento de fechas a
+  fin de mes.
+- El umbral de obligación, que se medía sobre el ingreso bruto en vez del neto.
+- El tope máximo de inversión, que ignoraba tanto la situación laboral como los CDTs que el
+  portafolio ya recibía en el mes — daba un número que la propia simulación contradecía al
+  agregarlo.
 
 ### Cobertura
 
 `npm run test:coverage` corre la suite con [`@vitest/coverage-v8`](https://vitest.dev/guide/coverage.html)
 y genera un reporte en texto (consola), HTML (`coverage/index.html`) y `coverage/coverage-summary.json`.
 El CI falla si la cobertura global baja de: 80% statements, 65% branches, 70% functions, 80% lines
-(medido el 24 de agosto de 2026: 88,69% / 76,16% / 82,84% / 89,89% — el umbral queda unos puntos por
-debajo como margen).
+(medido el 4 de septiembre de 2026: 90,56% / 78,65% / 80,98% / 91,75% — el umbral queda unos puntos
+por debajo como margen).
 
 > La tabla que Vitest imprime en consola tiene un bug conocido en esta versión: omite algunos
 > archivos con pruebas de la tabla (confirmado inspeccionando el JSON crudo: los datos están completos
