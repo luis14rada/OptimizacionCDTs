@@ -1,6 +1,6 @@
 # Pendientes — Optimizador de CDTs
 
-Estado a 24 de agosto de 2026. Salió de una auditoría del código y de dos
+Estado a 4 de septiembre de 2026. Salió de una auditoría del código y de dos
 investigaciones sobre el mercado colombiano. La versión con el detalle completo
 de cada propuesta está en el documento de ruta compartido aparte.
 
@@ -78,6 +78,64 @@ dos cambios transversales:
   interfaz -- se había colado en todo lo escrito en las últimas rondas.
 
 Suite en 202 pruebas.
+
+Después de eso, una ronda sobre la pestaña de CDTs que empezó como una mejora
+visual y terminó destapando tres errores de cálculo o de lectura:
+
+- **Flujo mensual desagregado por CDT.** La barra de cada mes se parte en un
+  segmento por CDT. El motor ya sabía qué CDT aportó cada pago, pero al
+  construir `flujoMensual` lo colapsaba al total y esa información se perdía.
+  El desglose se identifica sin depender del color: leyenda con el nombre de
+  cada CDT (numerando los del mismo banco), el nombre dentro del segmento
+  cuando cabe, el tooltip, y una columna nueva en la tabla accesible.
+- **El tope máximo de inversión mentía en dos escenarios.** Ignoraba la
+  situación laboral (a quien ya cotizaba le daba el número del rentista y al
+  agregarlo la simulación cobraba $199.603 al mes) e ignoraba el portafolio
+  actual (el umbral es del mes, así que sumado a CDTs que ya pagaban ahí se
+  pasaba: $499.008 al mes en el caso probado). Ahora descuenta lo que el
+  portafolio ya recibe en su mes más cargado y devuelve `null` cuando no
+  existe tope, con la interfaz diciéndolo en vez de dar un número falso.
+- **El umbral de 1 SMMLV también aplica a quien ya tiene salario.** Era el
+  supuesto de más consecuencia para el usuario al que apunta la app —un
+  empleado que además tiene CDTs— y el motor le cobraba desde el primer peso.
+  El art. 89 de la Ley 2277 de 2022 no condiciona el umbral a tener vínculo
+  laboral, y el ABC de la UGPP trata como independiente a quien, teniendo
+  salario, percibe además otros ingresos. Queda configurable
+  (`umbralAplicaConSalario`, por defecto `true`) con las fuentes enlazadas.
+  El arreglo de fondo fue separar dos cosas que una sola bandera decidía:
+  `aplicaPisoIbc` responde "¿sobre qué base mínima?" y `exigeUmbralDeCapital()`
+  responde "¿debo cotizar?".
+- **La línea de referencia de la gráfica estaba mal dos veces.** Se dibujaba
+  en el SMMLV ($1.750.905) sobre un eje que es interés bruto, cuando el umbral
+  en bruto es $2.415.041 — un 38% a la izquierda de donde nace la obligación.
+  Y su porcentaje se medía contra el ancho de toda la fila en vez de contra la
+  franja de las barras, así que terminaba dibujada encima de la columna de los
+  montos. Los dos defectos se tapaban entre sí: al corregir el valor, la línea
+  se fue al extremo derecho y el desalineamiento quedó en evidencia.
+- **Cada mes cercano al límite dice por cuánto se pasa o cuánto le falta.**
+  Salió de un caso real de Luis: dos meses que en pantalla se ven casi iguales,
+  uno paga $199.603 al año y el otro no. La diferencia eran **11 centavos**.
+  Las cifras se muestran con centavos cuando son menores a $100, porque
+  redondeadas a pesos el resultado seguía pareciendo arbitrario.
+
+De paso, la situación laboral por defecto pasó de "rentista de capital" a
+"empleado" (la más común de quien abre un CDT) y el campo del IBC explica qué
+valor va: la base de salud y pensión del desprendible de nómina, sin auxilio de
+transporte ni prestaciones, o el 70% si el salario es integral. También se
+corrigieron dos desbordamientos horizontales en móvil que ya existían.
+
+Suite en 247 pruebas. Cobertura al 4 de septiembre de 2026: 90,56% statements,
+78,65% branches, 80,98% functions, 91,75% lines.
+
+**Pendiente de decisión de Luis**, anotado y sin tocar:
+
+- El subtítulo de la app todavía le habla al "rentista de capital", y es
+  también la meta description que ve Google (`src/rutas.js`). Con "empleado"
+  como situación por defecto, ya no describe al usuario típico. Cambiarlo
+  afecta SEO, así que no se hizo por cuenta propia.
+- Una fuente secundaria (Gerencie) menciona costos presuntos del **28,08%**
+  donde la app usa 27,5% (Decreto 1601 de 2022). Puede ser un error de esa
+  página; vale confirmarlo antes de tocar nada.
 
 **Auditado el 24 de agosto de 2026, sin cambios de código necesarios**:
 contraste de color en modo oscuro. Se midieron las 13 combinaciones de texto
