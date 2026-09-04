@@ -56,6 +56,24 @@ export const exigeUmbralDeCapital = (parametros = PARAMETROS_POR_DEFECTO) => {
   return p.umbralAplicaConSalario !== false || situacion.aplicaPisoIbc;
 };
 
+/**
+ * El umbral de obligación, expresado en interés BRUTO del mes.
+ *
+ * Existe porque el umbral legal se mide sobre el ingreso NETO (art. 89 de la
+ * Ley 2277 de 2022) pero casi todo lo que la app muestra está en bruto: los
+ * flujos mensuales, la gráfica, el tope de inversión. Con el SMMLV de 2026 y
+ * 27,5% de costos son $1.750.905 contra $2.415.041 -- un 38% de diferencia,
+ * suficiente para que una línea de referencia dibujada en el valor equivocado
+ * marque como "pasado" un mes que no lo está.
+ *
+ * Vive en una sola función justamente para que el motor, el tope y la gráfica
+ * no puedan discrepar.
+ */
+export const umbralEnBrutoDelMes = (parametros = PARAMETROS_POR_DEFECTO) => {
+  const p = { ...PARAMETROS_POR_DEFECTO, ...parametros };
+  return p.umbralSobreIngresoNeto ? p.smmlv / (1 - p.costosPresuntos) : p.smmlv;
+};
+
 export const calcularSeguridadSocial = (ingresoBrutoMensual, parametros = PARAMETROS_POR_DEFECTO) => {
   const p = { ...PARAMETROS_POR_DEFECTO, ...parametros };
   const situacion = SITUACIONES_LABORALES[p.situacionLaboral] || SITUACIONES_LABORALES.rentista;
@@ -132,9 +150,7 @@ export const calcularInversionMaximaOptima = (
   // El tope busca que el interés de cada periodo no active la obligación de
   // cotizar. Como el umbral se mide sobre el ingreso neto (art. 89 Ley 2277
   // de 2022), el interés bruto puede llegar más alto antes de cruzarlo.
-  const umbralEnBruto = p.umbralSobreIngresoNeto
-    ? p.smmlv / (1 - p.costosPresuntos)
-    : p.smmlv;
+  const umbralEnBruto = umbralEnBrutoDelMes(p);
 
   // El umbral es del MES, no de un CDT: si el portafolio ya recibe intereses
   // en ese mes, lo que queda libre es solo la diferencia. Sin esto, el tope
