@@ -50,6 +50,22 @@ const PALETA = [
   'bg-lime-700 dark:bg-lime-400'
 ];
 
+/*
+ * Geometría de la fila, en un solo lugar.
+ *
+ * La línea de referencia se superpone usando exactamente las mismas medidas
+ * que las filas. Antes se posicionaba contra el ancho de TODA la fila mientras
+ * las barras se escalaban contra el ancho de su propia franja: con el límite
+ * cerca del máximo de la escala, la línea terminaba dibujada encima de la
+ * columna de los montos y las barras parecían no alcanzarla.
+ */
+// `absolute inset-0` se posiciona contra el padding box, así que la capa de la
+// línea tiene que repetir el mismo padding lateral que el contenedor o queda
+// corrida (medido: 3px sobre 784, unos $10.600 de desviación en la escala).
+const PADDING_FRANJA = 'pl-2 pr-1';
+const ANCHO_MES = 'w-14 shrink-0';
+const ANCHO_MONTO = 'w-24 sm:w-36 shrink-0';
+
 const nombreDe = (banco) => (banco || '').trim() || 'CDT';
 
 /**
@@ -175,20 +191,30 @@ export default function PortfolioChart({ flujoMensual, parametros }) {
         no anuncian de forma fiable -- se ocultan del árbol de accesibilidad y
         la tabla de abajo queda como la única fuente de verdad para ese caso.
       */}
-      <div className="relative pl-2 pr-1" aria-hidden="true">
-        {/* Línea de referencia: el umbral, en la misma unidad del eje */}
+      <div className={`relative ${PADDING_FRANJA}`} aria-hidden="true">
+        {/*
+          Línea de referencia: el umbral, en la misma unidad del eje. La capa
+          repite la estructura de la fila (mes · franja · monto) para que el
+          porcentaje se mida contra la misma franja en la que se dibujan las
+          barras.
+        */}
         {hayUmbral && (
-          <div
-            className="absolute top-0 bottom-0 border-l-2 border-dashed border-slate-400 dark:border-slate-500 z-10"
-            style={{ left: `calc(${Math.min(topePorcentaje, 100)}% + 0.5rem)` }}
-            aria-hidden="true"
-          >
-            <span className={`absolute -top-1 text-[10px] whitespace-nowrap text-slate-500 dark:text-slate-400 bg-white/70 dark:bg-slate-900/70 px-1 rounded ${
-              etiquetaTopeALaIzquierda ? 'right-1' : 'left-1'
-            }`}>
-              Límite {formatCurrency(umbral)}
-              {p.umbralSobreIngresoNeto ? ` (1 SMMLV neto)` : ` (1 SMMLV)`}
-            </span>
+          <div className={`absolute inset-0 pt-6 flex gap-3 pointer-events-none z-10 ${PADDING_FRANJA}`} aria-hidden="true">
+            <span className={ANCHO_MES}></span>
+            <div className="relative flex-1">
+              <div
+                className="absolute top-0 bottom-0 border-l-2 border-dashed border-slate-400 dark:border-slate-500"
+                style={{ left: `${Math.min(topePorcentaje, 100)}%` }}
+              >
+                <span className={`absolute -top-5 text-[10px] whitespace-nowrap text-slate-500 dark:text-slate-400 bg-white/70 dark:bg-slate-900/70 px-1 rounded ${
+                  etiquetaTopeALaIzquierda ? 'right-1' : 'left-1'
+                }`}>
+                  Límite {formatCurrency(umbral)}
+                  {p.umbralSobreIngresoNeto ? ` (1 SMMLV neto)` : ` (1 SMMLV)`}
+                </span>
+              </div>
+            </div>
+            <span className={ANCHO_MONTO}></span>
           </div>
         )}
 
@@ -201,7 +227,7 @@ export default function PortfolioChart({ flujoMensual, parametros }) {
 
             return (
               <li key={mes.mesKey} className="flex items-center gap-3">
-                <span className="w-14 shrink-0 text-xs text-slate-500 dark:text-slate-400 text-right capitalize">
+                <span className={`${ANCHO_MES} text-xs text-slate-500 dark:text-slate-400 text-right capitalize`}>
                   {formatMes(mes.mesKey)}
                 </span>
                 <div className="relative flex-1 h-6 rounded bg-slate-100 dark:bg-slate-800/60">
@@ -249,7 +275,7 @@ export default function PortfolioChart({ flujoMensual, parametros }) {
                 </div>
                 {/* w-24 en móvil: con w-28 fijo la fila desbordaba 6px y metía scroll
                     horizontal en toda la página a 375px de ancho. */}
-                <span className="w-24 sm:w-36 shrink-0 text-xs font-medium text-slate-600 dark:text-slate-300 tabular-nums">
+                <span className={`${ANCHO_MONTO} text-xs font-medium text-slate-600 dark:text-slate-300 tabular-nums`}>
                   {formatCurrency(mes.ingresoBrutoMes)}
                   {nota && (
                     <span className={`block text-[10px] font-semibold ${
