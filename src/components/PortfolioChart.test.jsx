@@ -239,4 +239,25 @@ describe('PortfolioChart', () => {
     expect(screen.queryByText(/límite \$/i)).not.toBeInTheDocument();
     expect(screen.getAllByText('paga seg. social').length).toBeGreaterThan(0);
   });
+
+  it('la línea se mide contra la franja de las barras, no contra toda la fila', () => {
+    // Regresión: la línea era hija directa del contenedor de todas las filas,
+    // así que su porcentaje se medía contra el ancho completo (mes + barra +
+    // monto). Con el límite cerca del máximo de la escala quedaba dibujada
+    // encima de la columna de los montos, y las barras parecían no alcanzarla.
+    const { container } = render(<PortfolioChart flujoMensual={flujoMensual} parametros={P_2026} />);
+    const linea = container.querySelector('.border-dashed');
+    const franja = linea.parentElement;
+    const capa = franja.parentElement;
+
+    // La capa repite la estructura de la fila: espaciador del mes, franja, monto.
+    expect(franja.className).toContain('flex-1');
+    expect(capa.firstElementChild.className).toContain('w-14');
+    expect(capa.lastElementChild.className).toContain('w-24');
+    // Y el mismo padding lateral: `inset-0` se posiciona contra el padding box.
+    expect(capa.className).toContain('pl-2');
+    expect(capa.className).toContain('pr-1');
+    // El desplazamiento es un porcentaje puro de la franja, sin offsets sumados.
+    expect(linea.style.left).toMatch(/^\d+(\.\d+)?%$/);
+  });
 });
