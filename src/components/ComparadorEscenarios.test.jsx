@@ -53,8 +53,8 @@ describe('ComparadorEscenarios', () => {
       />
     );
 
-    expect(screen.getByText(/2026 · Retención 4% · Rentista de capital/)).toBeInTheDocument();
-    expect(screen.getByText(/2026 · Retención 7% · Rentista de capital/)).toBeInTheDocument();
+    expect(screen.getByText(/2026 · Retención 4% · Ya cotizo como empleado/)).toBeInTheDocument();
+    expect(screen.getByText(/2026 · Retención 7% · Ya cotizo como empleado/)).toBeInTheDocument();
   });
 
   it('marca como "sin diferencia" los conceptos idénticos', () => {

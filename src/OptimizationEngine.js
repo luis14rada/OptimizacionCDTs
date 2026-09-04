@@ -42,6 +42,20 @@ export const calcularTasaPeriodica = (tasaEA, periodosAlAno) => {
   return Math.pow(1 + tasaEA, 1 / periodosAlAno) - 1;
 };
 
+/**
+ * ¿Se le exige a esta persona el umbral de 1 SMMLV sobre sus rentas de capital?
+ *
+ * Vive en una sola función porque lo consultan tres lugares: el cálculo de los
+ * aportes, el del tope máximo de inversión y los avisos de la interfaz. Tenerlo
+ * repetido era justamente lo que hacía que el tope prometiera algo distinto de
+ * lo que después cobraba la simulación.
+ */
+export const exigeUmbralDeCapital = (parametros = PARAMETROS_POR_DEFECTO) => {
+  const p = { ...PARAMETROS_POR_DEFECTO, ...parametros };
+  const situacion = SITUACIONES_LABORALES[p.situacionLaboral] || SITUACIONES_LABORALES.rentista;
+  return p.umbralAplicaConSalario !== false || situacion.aplicaPisoIbc;
+};
+
 export const calcularSeguridadSocial = (ingresoBrutoMensual, parametros = PARAMETROS_POR_DEFECTO) => {
   const p = { ...PARAMETROS_POR_DEFECTO, ...parametros };
   const situacion = SITUACIONES_LABORALES[p.situacionLaboral] || SITUACIONES_LABORALES.rentista;
@@ -55,7 +69,7 @@ export const calcularSeguridadSocial = (ingresoBrutoMensual, parametros = PARAME
   const ingresoNetoMensual = ingresoBrutoMensual - (ingresoBrutoMensual * p.costosPresuntos);
   const ingresoParaUmbral = p.umbralSobreIngresoNeto ? ingresoNetoMensual : ingresoBrutoMensual;
 
-  if (situacion.aplicaPiso && ingresoParaUmbral < p.smmlv) {
+  if (exigeUmbralDeCapital(p) && ingresoParaUmbral < p.smmlv) {
     return sinAporte;
   }
   if (ingresoBrutoMensual <= 0) return sinAporte;
@@ -64,7 +78,7 @@ export const calcularSeguridadSocial = (ingresoBrutoMensual, parametros = PARAME
   const techo = p.smmlv * p.topeIbcSmmlv;
 
   let ibcFinal;
-  if (situacion.aplicaPiso) {
+  if (situacion.aplicaPisoIbc) {
     // El IBC vive entre el piso de 1 SMMLV y el techo de 25 SMMLV.
     ibcFinal = Math.min(Math.max(ibcDelIngreso, p.smmlv), techo);
   } else {
@@ -81,8 +95,22 @@ export const calcularSeguridadSocial = (ingresoBrutoMensual, parametros = PARAME
   return { ibc: ibcFinal, salud, pension, total: salud + pension, excedeTope: ibcFinal > 0 };
 };
 
-export const calcularInversionMaximaOptima = (tasaEA, frecuenciaPago, plazoMeses = 12, parametros = PARAMETROS_POR_DEFECTO) => {
+export const calcularInversionMaximaOptima = (
+  tasaEA,
+  frecuenciaPago,
+  plazoMeses = 12,
+  parametros = PARAMETROS_POR_DEFECTO,
+  interesMensualYaComprometido = 0
+) => {
   const p = { ...PARAMETROS_POR_DEFECTO, ...parametros };
+
+  // Solo hay tope donde hay umbral. Si la persona configuró que ya cotizar por
+  // un salario la obliga desde el primer peso, no existe ningún tope "sin
+  // seguridad social" y devolver un número sería mentir -- antes se devolvía el
+  // mismo de un rentista, y al agregarlo la simulación cobraba los aportes que
+  // el tope prometía evitar.
+  if (!exigeUmbralDeCapital(p)) return null;
+
   let tasaPeriodoPago;
 
   if (frecuenciaPago === 'al_vencimiento') {
@@ -108,7 +136,14 @@ export const calcularInversionMaximaOptima = (tasaEA, frecuenciaPago, plazoMeses
     ? p.smmlv / (1 - p.costosPresuntos)
     : p.smmlv;
 
-  return Math.floor(umbralEnBruto / tasaPeriodoPago) - 1;
+  // El umbral es del MES, no de un CDT: si el portafolio ya recibe intereses
+  // en ese mes, lo que queda libre es solo la diferencia. Sin esto, el tope
+  // se calculaba como si el CDT nuevo fuera el único y al agregarlo el mes
+  // consolidado se pasaba.
+  const margen = umbralEnBruto - Math.max(0, interesMensualYaComprometido);
+  if (margen <= 0) return 0;
+
+  return Math.max(0, Math.floor(margen / tasaPeriodoPago) - 1);
 };
 
 /**
@@ -239,7 +274,7 @@ export const recalcularPortafolio = (cdts, parametros = PARAMETROS_POR_DEFECTO) 
       flujoCrudo.push({ mesKey, interesBruto, baseGravada, retencion });
 
       if (!flujosPorMes[mesKey]) flujosPorMes[mesKey] = [];
-      flujosPorMes[mesKey].push({ cdtId: cdt.id, interesBruto, baseGravada, retencion });
+      flujosPorMes[mesKey].push({ cdtId: cdt.id, banco: cdt.banco, interesBruto, baseGravada, retencion });
     }
 
     return {
@@ -274,11 +309,25 @@ export const recalcularPortafolio = (cdts, parametros = PARAMETROS_POR_DEFECTO) 
       cdtTarget.totalSegSocial += segSocialMes.total * proporcion;
     });
 
+    // Desglose por CDT del mes. El total por sí solo no dice de dónde salió:
+    // un mes que dispara seguridad social puede venir de un CDT grande o de
+    // tres pequeños que coincidieron, y eso cambia qué se puede reprogramar.
+    // Se agrega por `cdtId` porque un mismo CDT podría pagar dos veces en el
+    // mes, y se conserva el orden del portafolio para que el color de cada
+    // uno no cambie de un mes a otro en la gráfica.
+    const aportes = [];
+    for (const pago of pagosEnMes) {
+      const existente = aportes.find(a => a.cdtId === pago.cdtId);
+      if (existente) existente.interesBruto += pago.interesBruto;
+      else aportes.push({ cdtId: pago.cdtId, banco: pago.banco, interesBruto: pago.interesBruto });
+    }
+
     flujoMensual.push({
       mesKey,
       ingresoBrutoMes: ingresoBrutoTotalMes,
       segSocialMes: segSocialMes.total,
-      excedeTope: segSocialMes.excedeTope
+      excedeTope: segSocialMes.excedeTope,
+      aportes
     });
   }
 

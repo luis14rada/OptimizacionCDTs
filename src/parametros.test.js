@@ -37,9 +37,11 @@ describe('parametrosPorDefecto', () => {
     expect(p.smmlv).toBe(1423500);
   });
 
-  it('la retención por defecto es 4% y la situación por defecto es rentista', () => {
+  it('la retención por defecto es 4% y la situación por defecto es empleado', () => {
+    // Empleado es la situación más común de quien abre un CDT; arrancar en
+    // "rentista de capital" le mostraba a la mayoría un cálculo que no era el suyo.
     expect(PARAMETROS_POR_DEFECTO.retencion).toBeCloseTo(0.04, 6);
-    expect(PARAMETROS_POR_DEFECTO.situacionLaboral).toBe('rentista');
+    expect(PARAMETROS_POR_DEFECTO.situacionLaboral).toBe('empleado');
   });
 });
 
@@ -103,14 +105,34 @@ describe('Situación laboral', () => {
     expect(r.total).toBeCloseTo(r.salud, 6);
   });
 
-  it('quien ya cotiza no vuelve a tener el piso de 1 SMMLV: aporta desde el primer peso', () => {
+  it('el umbral de 1 SMMLV también protege a quien ya cotiza por un salario', () => {
+    // El art. 89 de la Ley 2277 de 2022 hace nacer la obligación con ingresos
+    // netos de 1 SMMLV, sin condicionarla a tener vínculo laboral. Antes el
+    // empleado aportaba desde el primer peso.
     const ingresoPequeno = 500000; // muy por debajo de 1 SMMLV
 
     const rentista = calcularSeguridadSocial(ingresoPequeno, { situacionLaboral: 'rentista' });
     const empleado = calcularSeguridadSocial(ingresoPequeno, { situacionLaboral: 'empleado', ibcYaCotizado: 3000000 });
 
     expect(rentista.total).toBe(0);
+    expect(empleado.total).toBe(0);
+  });
+
+  it('el criterio conservador se puede recuperar: sin umbral, el empleado aporta desde el primer peso', () => {
+    const empleado = calcularSeguridadSocial(500000, {
+      situacionLaboral: 'empleado', ibcYaCotizado: 3000000, umbralAplicaConSalario: false
+    });
     expect(empleado.total).toBeGreaterThan(0);
+  });
+
+  it('pasado el umbral, el empleado sí aporta y sin que se le exija de nuevo el piso del IBC', () => {
+    // Bruto $3.000.000 -> neto $2.175.000, por encima de 1 SMMLV: hay obligación.
+    // El IBC es el 40% del neto ($870.000), por debajo de 1 SMMLV, y NO se sube
+    // al piso porque su salario ya cubre esa base mínima.
+    const empleado = calcularSeguridadSocial(3000000, { situacionLaboral: 'empleado', ibcYaCotizado: 3000000 });
+    expect(empleado.total).toBeGreaterThan(0);
+    expect(empleado.ibc).toBeCloseTo(3000000 * 0.725 * 0.40, 4);
+    expect(empleado.ibc).toBeLessThan(PARAMETROS_POR_DEFECTO.smmlv);
   });
 
   it('quien ya cotiza cerca del techo solo aporta por la porción que falta', () => {
@@ -141,8 +163,10 @@ describe('Situación laboral', () => {
 
 describe('Constantes por año', () => {
   it('el tope de inversión de 2025 es menor que el de 2026, porque el SMMLV era menor', () => {
-    const max2026 = calcularInversionMaximaOptima(0.12, 'mensual', 12, parametrosPorDefecto(2026));
-    const max2025 = calcularInversionMaximaOptima(0.12, 'mensual', 12, parametrosPorDefecto(2025));
+    // El tope solo existe para quien tiene piso de 1 SMMLV (el rentista).
+    const rentista = (anio) => ({ ...parametrosPorDefecto(anio), situacionLaboral: 'rentista' });
+    const max2026 = calcularInversionMaximaOptima(0.12, 'mensual', 12, rentista(2026));
+    const max2025 = calcularInversionMaximaOptima(0.12, 'mensual', 12, rentista(2025));
     expect(max2025).toBeLessThan(max2026);
   });
 
